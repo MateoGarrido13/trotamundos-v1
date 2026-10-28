@@ -5,7 +5,7 @@ Trotamundos es un panel de gestión de viajes. El viajero ve todas sus reservas 
 Aqui se desarollan los procesos de identificar, capturar y documentar las decisiones de diseño y construir la arquitectura con el método ADD, junto con un prototipo que demuestre su viabilidad.
 Esta wiki registra las iteraciones, los ADRs, las vistas y los contratoa; a lo largo de 4 iteraciones
 
-**Objetivo de esta ronda.** Diseñar desde cero la arquitectura del panel de viajes en web y móvil para satisfacer los drivers de [LISTADO_DRIVERS.md](LISTADO_DRIVERS.md): `QA-PER-01`, `QA-PER-02`, `QA-PER-03`, `QA-PER-04*`, `QA-DIS-01`, `QA-ESC-01`, `QA-INT-01`, `QA-INT-02`, `QA-SEG-01`, `QA-SEG-02`, `QA-SEG-03*`, `QA-EVO-01` y `QA-USA-01`.
+**Objetivo de esta ronda.** Diseñar desde cero la arquitectura del panel de viajes en web y móvil para satisfacer los drivers de [LISTADO_DRIVERS.md](LISTADO_DRIVERS.md): `QA-PER-01`, `QA-PER-02`, `QA-PER-03`, `QA-PER-04*`, `QA-DIS-01`, `QA-ESC-01`, `QA-INT-01`, `QA-INT-02`, `QA-SEG-01`, `QA-SEG-02`, `QA-SEG-03*`, `QA-EVO-01`, `QA-USA-01`, `REF-01`, `REF-02`, `REF-03`, `REF-04`, `REF-05`, `REF-06`, `CON-01` y `CON-02`.
 
 ## Paso 1. Revisar las entradas
 
@@ -19,6 +19,8 @@ Los drivers de la arquitectura son los de [LISTADO_DRIVERS.md](LISTADO_DRIVERS.m
 | :--- | :--- | :--- |
 | Design purpose | Ronda 1, incremento greenfield | Satisfacer los escenarios de [LISTADO_DRIVERS.md](LISTADO_DRIVERS.md). |
 | Escenarios de QA | Los de [LISTADO_DRIVERS.md](LISTADO_DRIVERS.md) | El texto de cada escenario es el del listado. La nota del backlog dice dónde ese texto se aparta de su propio rótulo. |
+| Requerimientos funcionales | `REF-01` … `REF-06` | El texto está en [LISTADO_DRIVERS.md](LISTADO_DRIVERS.md). |
+| Restricciones | `CON-01`, `CON-02` | `CON-01`: las dos versiones, web y móvil, son necesarias. `CON-02`: la integración con aerolíneas, hoteles, arrendadoras y correo es por APIs. |
 
 Los picos de domingo a lunes, de jueves a viernes y los de una disrupción de viajes (clima) son el ambiente de `QA-DIS-01` y `QA-ESC-01`. No forman un driver aparte.
 

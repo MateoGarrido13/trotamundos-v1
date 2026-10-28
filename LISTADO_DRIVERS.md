@@ -1,6 +1,6 @@
 # Listado de drivers
 
-Registro los escenarios con un rótulo estable para citarlos después en las iteraciones y en los ADR. El esquema es `QA-<atributo>-<nn>`: PER rendimiento, DIS disponibilidad, ESC escalabilidad, INT interoperabilidad, SEG seguridad, EVO modificabilidad, USA usabilidad. El número tiene dos dígitos y corre dentro de cada atributo.
+Registro los escenarios con un rótulo estable para citarlos después en las iteraciones y en los ADR. El esquema es `QA-<atributo>-<nn>`: PER rendimiento, DIS disponibilidad, ESC escalabilidad, INT interoperabilidad, SEG seguridad, EVO modificabilidad, USA usabilidad. El número tiene dos dígitos y corre dentro de cada atributo. Los requerimientos funcionales son `REF-01` a `REF-06`. Las restricciones son `CON-01` y `CON-02`.
 
 El texto de cada campo es el que levantamos. En este paso lo ordeno en la plantilla, con las mismas etiquetas y el mismo orden de campos.
 
@@ -21,6 +21,14 @@ El texto de cada campo es el que levantamos. En este paso lo ordeno en la planti
 | `QA-SEG-03*` | Seguridad y Privacidad (Security) | El titular autoriza la lectura de su correo para detectar mensajes de viaje |
 | `QA-EVO-01` | Modificabilidad | Pedido de integrar un medio de transporte que el panel todavía no agrupa en el viaje |
 | `QA-USA-01` | Usabilidad | El viajero consulta su viaje en el móvil, que dispone de capacidades nativas como el GPS |
+| `REF-01` | Requerimiento funcional | Los elementos del panel se agrupan por viaje y, al completarse, se archivan o salen de la vista principal. |
+| `REF-02` | Requerimiento funcional | Sondear y escanear el correo del usuario y agregar al itinerario las reservas de los mensajes de viaje. |
+| `REF-03` | Requerimiento funcional | Filtrar y crear whitelists de remitentes seguros para correos de viaje. |
+| `REF-04` | Requerimiento funcional | El cliente agrega, actualiza o elimina una reserva a mano en el panel. |
+| `REF-05` | Requerimiento funcional | Integración con la agencia de viajes preferida para resolver un problema. |
+| `REF-06` | Requerimiento funcional | Consultas analíticas de tendencias, destinos y cancelaciones para el equipo de datos. |
+| `CON-01` | Restricción | Las dos versiones son necesarias: web y móvil. |
+| `CON-02` | Restricción | La integración con aerolíneas, hoteles, arrendadoras y correo es por APIs. |
 
 ## Escenario de Atributo de Calidad: Performance(Latencia) — QA-PER-01
 
@@ -203,3 +211,39 @@ El texto de cada campo es el que levantamos. En este paso lo ordeno en la planti
 | **Contexto:** | El viajero usa el móvil durante el viaje |
 | **Respuesta:** | El panel muestra el viaje en una interfaz que aprovecha esa capacidad nativa |
 | **Medida de respuesta:** | El nivel de satisfaccion de los usuarios en las app store es mayor a 3.5 estrellas en promedio
+
+## Requerimientos funcionales
+
+**Rótulo:** `REF-01` — Ciclo de vida del viaje
+
+Los elementos en el panel de control deben poder agruparse por viaje y, una vez que el viaje se completa, archivarse o eliminarse automáticamente de la vista principal.
+
+**Rótulo:** `REF-02` — Procesamiento de correo
+
+El sistema debe sondear y escanear el correo electrónico de los usuarios en busca de correos relacionados con viajes para agregar automáticamente las reservas al itinerario.
+
+**Rótulo:** `REF-03` — Filtros y whitelists
+
+Debe permitir filtrar y crear listas de remitentes seguros (whitelists) para ciertos correos electrónicos de viaje.
+
+**Rótulo:** `REF-04` — Gestión manual
+
+Los clientes deben poder agregar, actualizar o eliminar sus reservas existentes de forma manual dentro del panel.
+
+**Rótulo:** `REF-05` — Resolución de problemas
+
+El sistema debe integrarse con la agencia de viajes preferida del usuario para facilitar una rápida resolución de problemas.
+
+**Rótulo:** `REF-06` — Analítica de datos
+
+Trotamundos recopilará datos analíticos de los viajes (tendencias, destinos, cancelaciones) para su monetización por parte del equipo de datos, implicando la ejecución de consultas analíticas pesadas.
+
+## Restricciones
+
+**Rótulo:** `CON-01`
+
+Las dos versiones son necesarias: web y móvil.
+
+**Rótulo:** `CON-02`
+
+La integración con aerolíneas, hoteles, arrendadoras y correo es por APIs.
