@@ -129,26 +129,9 @@ Con echo, el adaptador sigue por la misma interfaz externa y pide disponibilidad
 - Cada adaptador → la API de su productor: ping/echo y, con eco, el pedido de disponibilidad y precio.
 - Base primaria → base pasiva.
 
-## Paso 7. Analizar y revisar el purpose
+## Paso 6. Bosquejar y registrar la decisión
 
-| Id del goal | Estado | Una oración |
-| :--- | :--- | :--- |
-| `REF-01` | Completely | El orquestador agrupa las reservas por viaje y las archiva o saca de la vista principal, con su interfaz definida hacia la base. |
-| `CON-01` | Completely | El API Gateway es el único punto de entrada de la web y del móvil (ADR-008). |
-| `CON-02` | Completely | Hay un adaptador ACL por contraparte (ADR-007) y Ping/Echo verifica el alcance de cada API (ADR-004). |
-| `QA-PER-02` | Partially | Caché y Scatter-Gather (ADR-005, ADR-006) atacan los 800 ms, pero el umbral de espera del ping no está fijado en ms, no se definió qué hace el sistema cuando una API no responde y la medida no está verificada. |
-| `QA-PER-03` | Partially | La caché de borde sirve el primer contenido, pero el FCP de 1,4 s en 3G no está verificado y la app móvil no tiene diseño interno. |
-| `QA-ESC-01` | Partially | El clúster N-Tier absorbe el registro (ADR-001), pero no hay decisión sobre la distribución entre continentes ni sobre el escalado de escrituras con una sola base primaria. |
-| `QA-DIS-01` | Partially | Redundant spare está aceptado (ADR-002), pero la sincronización de estado entre respaldo y principal es solo una propuesta (ADR-003), así que no se asegura no perder peticiones en vuelo. |
-
-| Pregunta | Respuesta |
-| :--- | :--- |
-| ¿Se cumplió el goal? | Parcialmente. La topología del Core quedó fijada y cubre `REF-01`, `CON-01` y `CON-02`. `QA-PER-02`, `QA-PER-03`, `QA-ESC-01` y `QA-DIS-01` quedan parciales por decisiones diferidas. |
-| Purpose de la ronda | Arquitectura greenfield del panel de viajes en web y móvil, guiada por los escenarios de [LISTADO_DRIVERS.md](LISTADO_DRIVERS.md) ([README.md](README.md), paso 1). |
-| ¿Hace falta otra iteración? | Sí. |
-| Entra en la siguiente | 1) Qué hace el sistema cuando Ping/Echo detecta una API caída: el orquestador ya arma la grilla con los orígenes que responden, pero falta decidir reintentos, degradación y aviso al usuario (`QA-PER-02`, `QA-DIS-01`). 2) Mecanismo de State resynchronization entre el componente de respaldo y el principal, por ejemplo checksum o hash (ADR-003, propuesto). 3) Umbral de espera del ping, en ms. 4) Escalado y distribución geográfica del registro y de la base (`QA-ESC-01`). 5) Diseño interno de la app móvil y verificación del FCP (`QA-PER-03`). 6) Los ids que quedaron afuera del goal siguen en `Not Yet`: `QA-PER-01`, `QA-PER-04*`, `QA-INT-01`, `QA-INT-02`, `QA-SEG-01` a `QA-SEG-03*`, `QA-EVO-01`, `QA-USA-01` y `REF-02` a `REF-06`. |
-
-## ADRs
+Decisiones de diseño registradas como ADR (ADR-001 a ADR-013).
 
 ### ADR-001. Estilo arquitectónico del Core: N-Tier
 
@@ -489,3 +472,22 @@ Opción rechazada: **"Service Discovery"**, porque con un único gateway y un cl
 
 ##### Consecuencias Negativas (Trade-offs / Riesgos)
 * Componente adicional de infraestructura.
+
+## Paso 7. Analizar y revisar el purpose
+
+| Id del goal | Estado | Una oración |
+| :--- | :--- | :--- |
+| `REF-01` | Completely | El orquestador agrupa las reservas por viaje y las archiva o saca de la vista principal, con su interfaz definida hacia la base. |
+| `CON-01` | Completely | El API Gateway es el único punto de entrada de la web y del móvil (ADR-008). |
+| `CON-02` | Completely | Hay un adaptador ACL por contraparte (ADR-007) y Ping/Echo verifica el alcance de cada API (ADR-004). |
+| `QA-PER-02` | Partially | Caché y Scatter-Gather (ADR-005, ADR-006) atacan los 800 ms, pero el umbral de espera del ping no está fijado en ms, no se definió qué hace el sistema cuando una API no responde y la medida no está verificada. |
+| `QA-PER-03` | Partially | La caché de borde sirve el primer contenido, pero el FCP de 1,4 s en 3G no está verificado y la app móvil no tiene diseño interno. |
+| `QA-ESC-01` | Partially | El clúster N-Tier absorbe el registro (ADR-001), pero no hay decisión sobre la distribución entre continentes ni sobre el escalado de escrituras con una sola base primaria. |
+| `QA-DIS-01` | Partially | Redundant spare está aceptado (ADR-002), pero la sincronización de estado entre respaldo y principal es solo una propuesta (ADR-003), así que no se asegura no perder peticiones en vuelo. |
+
+| Pregunta | Respuesta |
+| :--- | :--- |
+| ¿Se cumplió el goal? | Parcialmente. La topología del Core quedó fijada y cubre `REF-01`, `CON-01` y `CON-02`. `QA-PER-02`, `QA-PER-03`, `QA-ESC-01` y `QA-DIS-01` quedan parciales por decisiones diferidas. |
+| Purpose de la ronda | Arquitectura greenfield del panel de viajes en web y móvil, guiada por los escenarios de [LISTADO_DRIVERS.md](LISTADO_DRIVERS.md) ([README.md](README.md), paso 1). |
+| ¿Hace falta otra iteración? | Sí. |
+| Entra en la siguiente | 1) Qué hace el sistema cuando Ping/Echo detecta una API caída: el orquestador ya arma la grilla con los orígenes que responden, pero falta decidir reintentos, degradación y aviso al usuario (`QA-PER-02`, `QA-DIS-01`). 2) Mecanismo de State resynchronization entre el componente de respaldo y el principal, por ejemplo checksum o hash (ADR-003, propuesto). 3) Umbral de espera del ping, en ms. 4) Escalado y distribución geográfica del registro y de la base (`QA-ESC-01`). 5) Diseño interno de la app móvil y verificación del FCP (`QA-PER-03`). 6) Los ids que quedaron afuera del goal siguen en `Not Yet`: `QA-PER-01`, `QA-PER-04*`, `QA-INT-01`, `QA-INT-02`, `QA-SEG-01` a `QA-SEG-03*`, `QA-EVO-01`, `QA-USA-01` y `REF-02` a `REF-06`. |
