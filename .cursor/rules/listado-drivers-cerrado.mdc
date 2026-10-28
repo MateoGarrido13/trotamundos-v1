@@ -11,4 +11,6 @@ No editar ese archivo, ni una parte, hasta proponer el cambio y recibir un sí e
 
 Si otro archivo (README, iteración, ADR) pide un cambio que solo se cumple tocando el listado, dejar el listado como está y preguntar antes.
 
-Esos archivos solo pueden citar los rótulos de `LISTADO_DRIVERS.md`. No introducir otro driver de la arquitectura: ni un id nuevo, ni un caso de uso, concern o constraint tratado como driver.
+En README, iteraciones y ADR solo se mencionan drivers cuyo rótulo está en `LISTADO_DRIVERS.md`. No nombrar otro escenario, caso de uso, concern o restricción como driver.
+
+Para agregar un driver, proponer el rótulo y el texto al usuario y esperar un sí. Recién después se escribe en el listado y se puede citar.

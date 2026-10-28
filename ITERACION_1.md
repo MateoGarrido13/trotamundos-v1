@@ -5,7 +5,7 @@
 | --------------------------- | ------------------------------------------------------------------------------------------------------ |
 | **Ronda**                   | 1                                                                                                      |
 | **Arranque**                | Greenfield. Se refina el sistema mediante la descomposición que fija la topología del Core.            |
-| **Qué toma esta iteración** | La topología del Core para la consulta del viajero, con la escala, los tiempos de respuesta y la frontera de integración del goal. |
+| **Qué toma esta iteración** | La topología del Core para la consulta del viajero, con la escala y los tiempos de respuesta del goal. |
 
 
 El paso 1 de la ronda está en [README.md](README.md).
@@ -15,11 +15,19 @@ El paso 1 de la ronda está en [README.md](README.md).
 
 | Id           | En el goal o afuera                                                                              |
 | ------------ | ------------------------------------------------------------------------------------------------ |
+| `REF-01`     | En el goal. Las reservas se agrupan por viaje y, al completarse, se archivan o salen de la vista principal. |
 | `QA-PER-02`  | En el goal. Nueva cotización desde la web, en 800 ms.                                            |
 | `QA-PER-03`  | En el goal. El usuario abre la aplicación móvil y el primer contenido aparece en menos de 1,4 s. |
-| `QA-ESC-01`  | En el goal. Registro masivo de usuarios, con la escala y los picos del escenario.                |
-| `QA-INT-01`  | En el goal. Integrar la API propietaria de una cadena hotelera nueva en un único módulo de frontera, en menos de 2 semanas, sin alterar el motor de viajes ni la base principal. |
+| `QA-ESC-01`  | En el goal. Registro masivo de 100.000 usuarios nuevos por día.                                  |
+| `CON-01`     | En el goal. Las dos versiones son necesarias: web y móvil.                                       |
+| `CON-02`     | En el goal. La integración con aerolíneas, hoteles, arrendadoras y correo es por APIs.           |
+| `REF-02`     | Afuera. Sondear el correo y agregar al itinerario las reservas de los mensajes de viaje. |
+| `REF-03`     | Afuera. Filtrar y armar whitelists de remitentes de correos de viaje. |
+| `REF-04`     | Afuera. Agregar, actualizar o eliminar una reserva a mano. |
+| `REF-05`     | Afuera. Resolver un problema con la agencia de viajes preferida. |
+| `REF-06`     | Afuera. Consultas analíticas de tendencias, destinos y cancelaciones. |
 | `QA-PER-01`  | Afuera. Actualización de una API externa.                                                        |
+| `QA-INT-01`  | Afuera. Integrar la API propietaria de una cadena hotelera nueva. |
 | `QA-PER-04*` | Afuera. Consulta de tendencias, destinos y cancelaciones.                                        |
 | `QA-DIS-01`  | Afuera. Caída de un nodo de cotización.                                                          |
 | `QA-INT-02`  | Afuera. Incorporar Instagram como canal de propuestas e itinerarios.                             |
@@ -30,7 +38,7 @@ El paso 1 de la ronda está en [README.md](README.md).
 | `QA-USA-01`  | Afuera. El viajero consulta su viaje en el móvil, con una capacidad nativa como el GPS.          |
 
 
-**Goal.** El objetivo de esta iteración es definir la topología global del Core de la plataforma Trotamundos y centralizar las consultas que el viajero hace, desde la web o desde el móvil. Una cotización nueva responde en 800 ms desde la web (`QA-PER-02`). Al abrir la aplicación móvil, el primer contenido aparece en menos de 1,4 s (`QA-PER-03`). El Core atiende el registro de `QA-ESC-01`: 100.000 usuarios nuevos por día, con confirmación en menos de 2 segundos. Cuando el negocio instruye integrar la API propietaria de una cadena hotelera nueva (`QA-INT-01`), el cambio ocurre en un único módulo de frontera, en menos de 2 semanas, y el motor de viajes y la base principal siguen iguales.
+**Goal.** El objetivo de esta iteración es definir la topología global del Core de la plataforma Trotamundos para que las reservas se agrupen por viaje y, al completarse, se archiven o salgan de la vista principal (`REF-01`). Las dos versiones son necesarias, web y móvil (`CON-01`). Una cotización nueva responde en 800 ms desde la web (`QA-PER-02`). Al abrir la aplicación móvil, el primer contenido aparece en menos de 1,4 s (`QA-PER-03`). El Core atiende el registro de `QA-ESC-01`: 100.000 usuarios nuevos por día, con confirmación en menos de 2 segundos. La integración con aerolíneas, hoteles, arrendadoras y correo es por APIs (`CON-02`).
 
 
 
@@ -39,7 +47,7 @@ El paso 1 de la ronda está en [README.md](README.md).
 
 | Elemento   | Por qué este                                                                                                                                                                                           | Movimiento  |
 | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------- |
-| El sistema | Reúne la consulta del viajero en la web y en el móvil (`QA-PER-02`, `QA-PER-03`), el registro masivo de `QA-ESC-01` y la frontera por la que entra la API de una cadena hotelera nueva (`QA-INT-01`). La iteración establece la topología de ese Core como descomposición del sistema. | Descomponer |
+| El sistema | Reúne `REF-01` en la web y en el móvil (`CON-01`, `QA-PER-02`, `QA-PER-03`), el registro masivo de `QA-ESC-01` y las APIs de `CON-02`. La iteración establece la topología de ese Core como descomposición del sistema. | Descomponer |
 
 
 El sistema se descompone para fijar la topología del Core: el punto en el que el viajero consulta sus reservas agrupadas por viaje, desde la web y desde el móvil.
