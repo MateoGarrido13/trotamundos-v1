@@ -60,7 +60,7 @@ El sistema se descompone para fijar la topología del Core: el punto en el que e
 | Microservicios | Estilo | Servicios independientes y cohesivos (ej. Usuarios, Cotizaciones). | Suma complejidad operativa y de coordinación distribuida. | No |
 | Micro-kernel (plugins) | Estilo | Kernel mínimo con funcionalidades acoplables; alta extensibilidad local. | Menos apto para despliegues distribuidos de alta concurrencia (`QA-ESC-01`, `QA-PER-02`). | No |
 | Redundant spare | Táctica (disponibilidad) | Un componente duplicado toma el control si falla el primario (hot, warm o cold spare) (`QA-DIS-01`). | Costo de mantener componentes duplicados. | Sí |
-| State resynchronization | Táctica (disponibilidad) | Mantiene sincronizado el estado entre el componente activo y el de respaldo (ej. checksum o hash) (`QA-DIS-01`). | Tráfico y lógica extra para sincronizar. | Sí |
+| State resynchronization | Táctica (disponibilidad) | Mantiene sincronizado el estado entre el componente activo y el de respaldo (ej. checksum o hash) (`QA-DIS-01`). | Tráfico y lógica extra para sincronizar. | Propuesto (decisión futura, ADR-003) |
 | Heartbeat | Táctica (disponibilidad) | El componente vigilado emite mensajes periódicos a un monitor. | Agrega mensajería de monitoreo. | No |
 | Ping/Echo | Táctica (disponibilidad) | El adaptador envía un ping a la API de su productor y el eco indica que esa API responde (`QA-PER-02`, `CON-02`). | Agrega un pedido de alcance hacia cada API externa. | Sí |
 | Múltiples copias de datos (caché) | Táctica (performance) | Guarda cotizaciones previas y respuestas estáticas (`QA-PER-02`). | Los datos pueden estar desactualizados; hay que invalidar. | Sí |
@@ -70,7 +70,7 @@ El sistema se descompone para fijar la topología del Core: el punto en el que e
 | API Gateway | Táctica (interoperabilidad) | Unifica el punto de entrada para clientes móviles y web (`CON-01`). | Es un punto único que hay que dimensionar y hacer redundante. | Sí |
 | Service Discovery | Táctica (interoperabilidad) | Registro dinámico de endpoints internos, sin IPs fijas. | Componente adicional de infraestructura. | No |
 
-Tácticas que quedan: Redundant spare, State resynchronization, Ping/Echo, Múltiples copias de datos (caché), Procesamiento concurrente (Scatter-Gather), Capa Anti-Corrupción (ACL) / Adaptadores y API Gateway.
+Tácticas que quedan: Redundant spare, Ping/Echo, Múltiples copias de datos (caché), Procesamiento concurrente (Scatter-Gather), Capa Anti-Corrupción (ACL) / Adaptadores y API Gateway. State resynchronization queda propuesta: cómo sincronizar el estado entre el nodo activo y el de respaldo se decide más adelante (ADR-003).
 
 Prototipo throwaway: ninguno por ahora.
 
@@ -103,7 +103,7 @@ El tier se instancia con redundant spare: un clúster de nodos idénticos detrá
 
 | Elemento | Responsabilidad | Interfaz |
 | -------- | --------------- | -------- |
-| Base de datos principal (activo/pasivo) | El nodo primario persiste cuentas, perfiles, sesiones, viajes activos y el archivo de viajes completados (`REF-01`). Replica su estado transaccional al nodo pasivo. State resynchronization: los dos nodos comparan ese estado por checksum en una red privada (`QA-DIS-01`). Cuando el primario deja de atender, el pasivo asume el tráfico. | Desde el registro y el orquestador: conexiones al nodo que atiende las escrituras, con un protocolo de base de datos (JDBC u ODBC). Entre primario y pasivo: la red privada de sincronización y el checksum. |
+| Base de datos principal (activo/pasivo) | El nodo primario persiste cuentas, perfiles, sesiones, viajes activos y el archivo de viajes completados (`REF-01`). Replica su estado transaccional al nodo pasivo. State resynchronization queda como decisión futura (ADR-003, propuesto): el mecanismo con el que los dos nodos sincronizan su estado se define más adelante (`QA-DIS-01`). Cuando el primario deja de atender, el pasivo asume el tráfico. | Desde el registro y el orquestador: conexiones al nodo que atiende las escrituras, con un protocolo de base de datos (JDBC u ODBC). Entre primario y pasivo: la sincronización de estado, a definir (ADR-003). |
 
 ### Ping/echo
 
@@ -128,3 +128,345 @@ Con echo, el adaptador sigue por la misma interfaz externa y pide disponibilidad
 - Orquestador → adaptadores de aerolíneas, hoteles y arrendadoras, en paralelo.
 - Cada adaptador → la API de su productor: ping/echo y, con eco, el pedido de disponibilidad y precio.
 - Base primaria → base pasiva.
+
+## ADRs
+
+### ADR-001. Estilo arquitectónico del Core: N-Tier
+
+* **Estado:** aceptado
+* **Fecha:** 2026-10-28
+* **Decisores:** Mateo Garrido
+
+#### Contexto y Declaración del Problema
+El sistema se descompone para fijar la topología del Core: el punto en el que el viajero consulta sus reservas agrupadas por viaje, desde la web y desde el móvil.
+
+#### Impulsores de la Decisión (Decision Drivers)
+* `QA-ESC-01` — Registro masivo sostenido de 100.000 nuevos usuarios diarios.
+* `CON-01` — Las dos versiones son necesarias: web y móvil.
+* `CON-02` — La integración con aerolíneas, hoteles, arrendadoras y correo es por APIs.
+
+#### Opciones Consideradas
+* Opción 1: N-Tier (capas / three-tier)
+* Opción 2: Microservicios
+* Opción 3: Micro-kernel (plugins)
+
+#### Resultado de la Decisión
+Opción elegida: **"N-Tier (capas / three-tier)"**, porque separa presentación, lógica de negocio y datos sobre una base probada, lo que cubre el registro masivo, las dos versiones y las integraciones por API. Su costo, escalar las capas juntas, es menor que la complejidad operativa de los microservicios y la baja aptitud del micro-kernel para alta concurrencia.
+
+##### Consecuencias Positivas (Beneficios)
+* Separa presentación, lógica de negocio y datos, sobre una base tradicional y probada.
+
+##### Consecuencias Negativas (Trade-offs / Riesgos)
+* Las capas se escalan juntas con menos granularidad que servicios independientes.
+
+### ADR-002. Disponibilidad: Redundant spare
+
+* **Estado:** aceptado
+* **Fecha:** 2026-10-28
+* **Decisores:** Yaco Recroa
+
+#### Contexto y Declaración del Problema
+El tier de negocio se instancia como un clúster de nodos idénticos detrás del balanceador, para responder a `QA-DIS-01`. Por ahora esta es la única táctica de disponibilidad decidida. La sincronización del estado entre nodos queda como decisión futura (ADR-003, propuesto).
+
+#### Impulsores de la Decisión (Decision Drivers)
+* `QA-DIS-01` — Caída de un nodo de cotización, con menos de 5 minutos de inactividad al mes.
+
+#### Opciones Consideradas
+* Opción 1: Redundant spare
+* Opción 2: Heartbeat
+
+#### Resultado de la Decisión
+Opción elegida: **"Redundant spare"**, porque un componente duplicado toma el control si falla el primario. Eso permite una recuperación transparente con menos de 5 minutos de inactividad al mes, y el costo de duplicar se acepta por esa meta.
+
+##### Consecuencias Positivas (Beneficios)
+* Un componente duplicado toma el control si falla el primario (hot, warm o cold spare).
+
+##### Consecuencias Negativas (Trade-offs / Riesgos)
+* Costo de mantener componentes duplicados.
+
+### ADR-003. Disponibilidad: State resynchronization
+
+* **Estado:** propuesto
+* **Fecha:** 2026-10-28
+* **Decisores:** Yaco Recroa
+
+#### Contexto y Declaración del Problema
+Con Redundant spare (ADR-002) hace falta que el nodo de respaldo tenga el mismo estado que el activo para asumir el tráfico sin perder datos. Cómo sincronizar ese estado, por ejemplo con checksum o hash, se define más adelante.
+
+#### Impulsores de la Decisión (Decision Drivers)
+* `QA-DIS-01` — Caída de un nodo de cotización, con menos de 5 minutos de inactividad al mes.
+
+#### Opciones Consideradas
+* Opción 1: State resynchronization
+* Opción 2: Heartbeat
+
+#### Resultado de la Decisión
+Opción propuesta: **"State resynchronization"**, porque un respaldo sin el estado del activo no puede asumir el tráfico sin perder datos, y es lo que complementaría a Redundant spare para `QA-DIS-01`. La decisión final y el mecanismo se toman en una iteración posterior.
+
+##### Consecuencias Positivas (Beneficios)
+* Mantiene sincronizado el estado entre el componente activo y el de respaldo (ej. checksum o hash).
+
+##### Consecuencias Negativas (Trade-offs / Riesgos)
+* Tráfico y lógica extra para sincronizar.
+
+### ADR-004. Disponibilidad: Ping/Echo
+
+* **Estado:** aceptado
+* **Fecha:** 2026-10-28
+* **Decisores:** Ramiro Rossi
+
+#### Contexto y Declaración del Problema
+Hay que verificar si las APIs externas de los proveedores están activas, es decir, si hay conexión. Qué hacer cuando una falla se decide después.
+
+#### Impulsores de la Decisión (Decision Drivers)
+* `QA-DIS-01` — Caída de un nodo de cotización, con menos de 5 minutos de inactividad al mes.
+* `QA-PER-02` — Nueva cotización desde la web, en 800 ms.
+* `CON-02` — La integración con aerolíneas, hoteles, arrendadoras y correo es por APIs.
+
+#### Opciones Consideradas
+* Opción 1: Ping/Echo
+* Opción 2: Heartbeat
+
+#### Resultado de la Decisión
+Opción elegida: **"Ping/Echo"**, porque el adaptador inicia la verificación contra la API de su productor sin que esta tenga que emitir nada, que es lo que exige `CON-02` al tratar con APIs de terceros. Además evita pedir precio a una API que no responde.
+
+##### Consecuencias Positivas (Beneficios)
+* El adaptador envía un ping a la API de su productor y el eco indica que esa API responde.
+
+##### Consecuencias Negativas (Trade-offs / Riesgos)
+* Agrega un pedido de alcance hacia cada API externa.
+
+### ADR-005. Performance: Múltiples copias de datos (caché)
+
+* **Estado:** aceptado
+* **Fecha:** 2026-10-28
+* **Decisores:** Yaco Recroa
+
+#### Contexto y Declaración del Problema
+La cotización nueva debe responder en 800 ms. La caché de borde guarda recursos estáticos, respuestas frecuentes y la grilla ya consolidada de una fecha, un hospedaje y una compañía.
+
+#### Impulsores de la Decisión (Decision Drivers)
+* `QA-PER-02` — Nueva cotización desde la web, en 800 ms.
+
+#### Opciones Consideradas
+* Opción 1: Múltiples copias de datos (caché)
+* Opción 2: Priorización de recursos
+
+#### Resultado de la Decisión
+Opción elegida: **"Múltiples copias de datos (caché)"**, porque reutilizar cotizaciones previas evita repetir la consulta a los proveedores y reduce la latencia directamente, con una invalidación que se acepta como costo.
+
+##### Consecuencias Positivas (Beneficios)
+* Guarda cotizaciones previas y respuestas estáticas.
+
+##### Consecuencias Negativas (Trade-offs / Riesgos)
+* Los datos pueden estar desactualizados; hay que invalidar.
+
+### ADR-006. Performance: Procesamiento concurrente (Scatter-Gather)
+
+* **Estado:** aceptado
+* **Fecha:** 2026-10-28
+* **Decisores:** Tomas Fontana
+
+#### Contexto y Declaración del Problema
+La cotización consulta a varios proveedores (aerolíneas, hoteles, arrendadoras) y debe cerrar en 800 ms. El orquestador consolida la grilla con los orígenes que respondieron.
+
+#### Impulsores de la Decisión (Decision Drivers)
+* `QA-PER-02` — Nueva cotización desde la web, en 800 ms.
+
+#### Opciones Consideradas
+* Opción 1: Procesamiento concurrente (Scatter-Gather)
+* Opción 2: Priorización de recursos
+
+#### Resultado de la Decisión
+Opción elegida: **"Procesamiento concurrente (Scatter-Gather)"**, porque paralelizar las consultas evita que las latencias de cada proveedor se sumen, algo que da una mejora mayor sobre `QA-PER-02` que reasignar hilos.
+
+##### Consecuencias Positivas (Beneficios)
+* Paraleliza consultas a varios orígenes y evita sumar latencias en forma lineal.
+
+##### Consecuencias Negativas (Trade-offs / Riesgos)
+* Más complejidad de coordinación y manejo de respuestas parciales.
+
+### ADR-007. Interoperabilidad: Capa Anti-Corrupción (ACL) / Adaptadores
+
+* **Estado:** aceptado
+* **Fecha:** 2026-10-28
+* **Decisores:** Santiago Otaño
+
+#### Contexto y Declaración del Problema
+Cada contraparte de `CON-02` (aerolíneas, hoteles, arrendadoras y correo) expone su propio contrato, JSON, XML, REST o SOAP, que el Core no debe adoptar como modelo propio.
+
+#### Impulsores de la Decisión (Decision Drivers)
+* `CON-02` — La integración con aerolíneas, hoteles, arrendadoras y correo es por APIs.
+
+#### Opciones Consideradas
+* Opción 1: Capa Anti-Corrupción (ACL) / Adaptadores
+* Opción 2: Service Discovery
+
+#### Resultado de la Decisión
+Opción elegida: **"Capa Anti-Corrupción (ACL) / Adaptadores"**, porque aísla el modelo de dominio del contrato de cada proveedor, y es el problema que plantea `CON-02`. Service Discovery no lo resuelve.
+
+##### Consecuencias Positivas (Beneficios)
+* Aísla el modelo de dominio interno del contrato externo.
+
+##### Consecuencias Negativas (Trade-offs / Riesgos)
+* Una capa extra de traducción.
+
+### ADR-008. Interoperabilidad: API Gateway
+
+* **Estado:** aceptado
+* **Fecha:** 2026-10-28
+* **Decisores:** Santiago Otaño
+
+#### Contexto y Declaración del Problema
+La web y el móvil necesitan un único punto de entrada público (`CON-01`). Desde ahí se valida la sesión y se reparte el pedido al tier de negocio.
+
+#### Impulsores de la Decisión (Decision Drivers)
+* `CON-01` — Las dos versiones son necesarias: web y móvil.
+
+#### Opciones Consideradas
+* Opción 1: API Gateway
+* Opción 2: Service Discovery
+
+#### Resultado de la Decisión
+Opción elegida: **"API Gateway"**, porque unifica la entrada de los dos clientes, y el riesgo de punto único se mitiga con una copia que toma el control cuando la primaria deja de responder.
+
+##### Consecuencias Positivas (Beneficios)
+* Unifica el punto de entrada para clientes móviles y web.
+
+##### Consecuencias Negativas (Trade-offs / Riesgos)
+* Es un punto único que hay que dimensionar y hacer redundante.
+
+### ADR-009. Estilo arquitectónico: Microservicios
+
+* **Estado:** rechazado
+* **Fecha:** 2026-10-28
+* **Decisores:** Mateo Garrido
+
+#### Contexto y Declaración del Problema
+El mismo del ADR-001: fijar el estilo arquitectónico de la topología del Core.
+
+#### Impulsores de la Decisión (Decision Drivers)
+* `QA-ESC-01` — Registro masivo sostenido de 100.000 nuevos usuarios diarios.
+* `CON-01` — Las dos versiones son necesarias: web y móvil.
+* `CON-02` — La integración con aerolíneas, hoteles, arrendadoras y correo es por APIs.
+
+#### Opciones Consideradas
+* Opción 1: N-Tier (capas / three-tier)
+* Opción 2: Microservicios
+* Opción 3: Micro-kernel (plugins)
+
+#### Resultado de la Decisión
+Opción rechazada: **"Microservicios"**, porque su complejidad operativa y de coordinación distribuida no se justifica frente a N-Tier (ADR-001).
+
+##### Consecuencias Positivas (Beneficios)
+* Servicios independientes y cohesivos (ej. Usuarios, Cotizaciones).
+
+##### Consecuencias Negativas (Trade-offs / Riesgos)
+* Suma complejidad operativa y de coordinación distribuida.
+
+### ADR-010. Disponibilidad: Heartbeat
+
+* **Estado:** rechazado
+* **Fecha:** 2026-10-28
+* **Decisores:** Ramiro Rossi
+
+#### Contexto y Declaración del Problema
+Detectar el fallo de un componente en la táctica de disponibilidad de `QA-DIS-01` y de las APIs externas (ADR-002 y ADR-004). La sincronización de estado (ADR-003) sigue propuesta.
+
+#### Impulsores de la Decisión (Decision Drivers)
+* `QA-DIS-01` — Caída de un nodo de cotización, con menos de 5 minutos de inactividad al mes.
+
+#### Opciones Consideradas
+* Opción 1: Redundant spare
+* Opción 2: State resynchronization
+* Opción 3: Ping/Echo
+* Opción 4: Heartbeat
+
+#### Resultado de la Decisión
+Opción rechazada: **"Heartbeat"**, porque exige que el componente vigilado emita mensajes, algo que no podemos pedirle a las APIs de terceros. Ping/Echo lo reemplaza desde el lado del adaptador (ADR-004).
+
+##### Consecuencias Positivas (Beneficios)
+* El componente vigilado emite mensajes periódicos a un monitor.
+
+##### Consecuencias Negativas (Trade-offs / Riesgos)
+* Agrega mensajería de monitoreo.
+
+### ADR-011. Estilo arquitectónico: Micro-kernel (plugins)
+
+* **Estado:** rechazado
+* **Fecha:** 2026-10-28
+* **Decisores:** Mateo Garrido
+
+#### Contexto y Declaración del Problema
+El mismo del ADR-001: fijar el estilo arquitectónico de la topología del Core.
+
+#### Impulsores de la Decisión (Decision Drivers)
+* `QA-ESC-01` — Registro masivo sostenido de 100.000 nuevos usuarios diarios.
+* `QA-PER-02` — Nueva cotización desde la web, en 800 ms.
+
+#### Opciones Consideradas
+* Opción 1: N-Tier (capas / three-tier)
+* Opción 2: Microservicios
+* Opción 3: Micro-kernel (plugins)
+
+#### Resultado de la Decisión
+Opción rechazada: **"Micro-kernel (plugins)"**, porque es menos apto para despliegues distribuidos de alta concurrencia, justo lo que piden el registro masivo y la cotización.
+
+##### Consecuencias Positivas (Beneficios)
+* Kernel mínimo con funcionalidades acoplables; alta extensibilidad local.
+
+##### Consecuencias Negativas (Trade-offs / Riesgos)
+* Menos apto para despliegues distribuidos de alta concurrencia.
+
+### ADR-012. Performance: Priorización de recursos
+
+* **Estado:** rechazado
+* **Fecha:** 2026-10-28
+* **Decisores:** Tomas Fontana
+
+#### Contexto y Declaración del Problema
+Mejorar la latencia de la cotización web (`QA-PER-02`) frente a otras cargas.
+
+#### Impulsores de la Decisión (Decision Drivers)
+* `QA-PER-02` — Nueva cotización desde la web, en 800 ms.
+
+#### Opciones Consideradas
+* Opción 1: Múltiples copias de datos (caché)
+* Opción 2: Procesamiento concurrente (Scatter-Gather)
+* Opción 3: Priorización de recursos
+
+#### Resultado de la Decisión
+Opción rechazada: **"Priorización de recursos"**, porque su beneficio es frente a los reportes analíticos (`REF-06`), que esta iteración dejó fuera del goal.
+
+##### Consecuencias Positivas (Beneficios)
+* Da más hilos a transacciones críticas (ej. cotizaciones web) frente a reportes analíticos.
+
+##### Consecuencias Negativas (Trade-offs / Riesgos)
+* Requiere políticas de asignación.
+
+### ADR-013. Interoperabilidad: Service Discovery
+
+* **Estado:** rechazado
+* **Fecha:** 2026-10-28
+* **Decisores:** Santiago Otaño
+
+#### Contexto y Declaración del Problema
+Resolver cómo se encuentran los componentes internos, mientras se decide el punto de entrada y la traducción hacia los proveedores (ADR-007 y ADR-008).
+
+#### Impulsores de la Decisión (Decision Drivers)
+* `CON-01` — Las dos versiones son necesarias: web y móvil.
+* `CON-02` — La integración con aerolíneas, hoteles, arrendadoras y correo es por APIs.
+
+#### Opciones Consideradas
+* Opción 1: Capa Anti-Corrupción (ACL) / Adaptadores
+* Opción 2: API Gateway
+* Opción 3: Service Discovery
+
+#### Resultado de la Decisión
+Opción rechazada: **"Service Discovery"**, porque con un único gateway y un clúster detrás del balanceador no hay endpoints internos dinámicos que resolver, y solo sumaría infraestructura.
+
+##### Consecuencias Positivas (Beneficios)
+* Registro dinámico de endpoints internos, sin IPs fijas.
+
+##### Consecuencias Negativas (Trade-offs / Riesgos)
+* Componente adicional de infraestructura.
