@@ -5,24 +5,21 @@ description: >-
   el 5, las ADR confirmadas bajo el formato de ADR_TEMPLATE.md. Una ADR por
   vez: pregunta lo no especificado, ofrece posibles datos y escribe en el
   mismo archivo solo cuando el usuario responde "OK ADR". Usar cuando el
-  usuario invoca /skill-adrs e indica el archivo de la iteración.
-argument-hint: "[archivo de la iteración]"
+  usuario invoca /skill-ADRs o skill-ADRs e indica el archivo de la iteración.
 disable-model-invocation: true
 ---
 
-# skill-adrs
+# skill-ADRs
 
 Registra ADR en el archivo de la iteración. Una por vez. Sin confirmación no se escribe.
 
 NO INFIERAS INFORMACION QUE NO SE ESPECIFICO, EN ESOS CASOS PREGUNTAR AL USUARIO CON POSIBLES DATOS
 
-Argumentos recibidos: `$ARGUMENTS`
-
 ## Fuentes
 
-Al invocar, leer solo (con la herramienta Read):
+Al invocar, leer solo:
 
-1. El markdown de iteración que el usuario nombró (normalmente en `$ARGUMENTS`).
+1. El markdown de iteración que el usuario nombró.
 2. `ADR_TEMPLATE.md` en la raíz del repositorio. El formato de cada ADR es el de ese archivo.
 3. `LISTADO_DRIVERS.md` solo para comprobar un rótulo antes de citarlo. No editarlo.
 
@@ -36,13 +33,13 @@ Si falta alguno de los pasos 2 a 5, decir cuál falta y terminar. No armar una c
 
 ## Qué cuenta como ADR
 
-Una ADR es una elección explícita. Detectarla en el archivo y en esta conversación. No fabricar una elección a partir de un driver, un goal o una responsabilidad.
+Una ADR es una elección explícita. Detectarla en el archivo y en este chat. No fabricar una elección a partir de un driver, un goal o una responsabilidad.
 
 Entran en la cola, en este orden:
 
 1. **Paso 4.** Cada fila cuya columna `Queda` afirma la elección (`sí`, `queda`, `elegida` u otra marca explícita). El nombre de esa alternativa es la opción elegida. Las otras filas son opciones consideradas solo si el propio paso dice que son alternativas de la misma decisión. Si la tabla mezcla decisiones y no dice cómo agruparlas, preguntar el agrupamiento antes de redactar.
 2. **Paso 5.** Una frase que elige (`se elige`, `se asigna`, `la interfaz es`) y que no es la instanciación de una fila ya encolada del paso 4. Si solo asigna responsabilidades y no hay alternativa descartada, preguntar si es una ADR. No encolarla en silencio.
-3. **Esta conversación.** Una frase del usuario que decide (`decidimos`, `vamos con`, `la ADR es`) y que todavía no está en el archivo.
+3. **Este chat.** Una frase del usuario que decide (`decidimos`, `vamos con`, `la ADR es`) y que todavía no está en el archivo.
 
 Saltar lo que ya está registrado en el archivo como ADR (mismo título o la misma opción en `Resultado de la Decisión`).
 
@@ -80,7 +77,7 @@ Opción elegida: **"…"**, porque …
 
 `NNN` sigue al mayor `ADR-NNN` ya presente en el archivo. Si no hay, empieza en `ADR-001`.
 
-Un campo se llena solo si el texto está en el archivo o en esta conversación, y se copia. Transcribir celdas vale: `Beneficia` y `Perjudica` de la fila elegida pueden ser consecuencias; los ids del goal o de esa fila pueden ser impulsores, citados con su rótulo de `LISTADO_DRIVERS.md`.
+Un campo se llena solo si el texto está en el archivo o en este chat, y se copia. Transcribir celdas vale: `Beneficia` y `Perjudica` de la fila elegida pueden ser consecuencias; los ids del goal o de esa fila pueden ser impulsores, citados con su rótulo de `LISTADO_DRIVERS.md`.
 
 No rellenar para llegar a tres opciones. Las que no estén escritas no existen todavía.
 
@@ -90,7 +87,7 @@ Un campo sin texto queda `[sin especificar]`. No usar la fecha de hoy, `aceptado
 
 Preguntar por cada campo `[sin especificar]`. Un posible dato tiene que salir de una de estas tres fuentes, y hay que decir de cuál:
 
-- una celda o frase del archivo de la iteración, o una frase de esta conversación
+- una celda o frase del archivo de la iteración, o una frase de este chat
 - el enum de estado de `ADR_TEMPLATE.md`: `propuesto`, `aceptado`, `rechazado`, `obsoleto`, `reemplazado por ADR-XXX`
 - la fecha de hoy, únicamente para el campo Fecha
 
@@ -102,8 +99,8 @@ No citar un rótulo que no esté en `LISTADO_DRIVERS.md`. Si el texto trae un es
 
 ## Flujo
 
-1. El usuario llama con `/skill-adrs` y menciona el archivo de la iteración.
-2. Por cada ADR detectada, mostrar el borrador completo en el chat y quedar a la espera. No registrar todavía.
+1. El usuario llama con `/skill-ADRs` y menciona el archivo de la iteración.
+2. Por cada ADR detectada en el chat, mostrar el borrador completo y quedar a la espera. No registrar todavía.
 3. El usuario confirma con `OK ADR` y se continúa con la siguiente ADR detectada, o pide modificaciones y se vuelve al paso 2.
 4. Cuando todas las ADR detectadas están registradas, terminar.
 
@@ -113,8 +110,8 @@ No escribir la ADR si queda un `[sin especificar]`, aunque el mensaje diga `OK A
 
 Al recibir `OK ADR` con el borrador completo:
 
-- Escribir esa ADR en el mismo archivo (con Edit), al final, bajo `## ADRs`. Crear la sección si no existe. No borrar los pasos 6 ni 7 si ya están.
-- Volver a leer el fragmento escrito (con Read) y comprobar que coincide con el borrador confirmado.
+- Escribir esa ADR en el mismo archivo, al final, bajo `## ADRs`. Crear la sección si no existe. No borrar los pasos 6 ni 7 si ya están.
+- Volver a leer el fragmento escrito y comprobar que coincide con el borrador confirmado.
 - Presentar la siguiente de la cola.
 
 No abrir una segunda detección al terminar. Una decisión nueva solo entra si el usuario la enuncia después.
@@ -151,7 +148,7 @@ Opción elegida: **"API por viaje"**, porque [sin especificar].
 Falta especificar:
 1. Estado. Posibles datos, del enum de ADR_TEMPLATE.md: propuesto, aceptado, rechazado, obsoleto, reemplazado por ADR-XXX.
 2. Fecha. Posible dato: YYYY-MM-DD (hoy). ¿Es la fecha de la decisión?
-3. Decisores. No están en el archivo ni en la conversación. ¿Quiénes deciden?
+3. Decisores. No están en el archivo ni en el chat. ¿Quiénes deciden?
 4. El porque. No hay justificación escrita. ¿Cuál es?
 5. Beneficios. No hay un posible dato en las fuentes. ¿Cuáles se registran?
 
