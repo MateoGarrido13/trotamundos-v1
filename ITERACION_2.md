@@ -180,3 +180,15 @@ Estructura:
 Si no hay copia válida, el pedido sigue por API Gateway y Balanceador de Carga hasta Orquestador de viajes, y el contenido fresco vuelve a la caché. Dentro de la cota, la caché actualiza el borde y entrega ese fresco.   
   
 Entre las bases (`QA-DIS-01`), Base primaria retiene la escritura hasta que Base pasiva acuerda el commit en dos fases. Si Base primaria deja de responder, el JDBC conmuta a Base pasiva. La sincronización de estado mantiene a la pasiva lista para ser promovida. Sirve para ver, en un solo recorrido, cómo se cierra el primer contenido del móvil y cómo las dos copias acuerdan la escritura o siguen atendiendo si la primaria no responde.
+
+### Secuencia — Cotización desde la web
+
+Estructura:
+
+![Vista de secuencia — Cotización web (QA-PER-02)](vistas/VIEW_SECUENCIA_COTIZACION_IT2.svg)
+
+**Epígrafe.** Vista de secuencia. Expone la cotización web en el cache miss (`QA-PER-02`): el enrutamiento hasta Orquestador de viajes, el Scatter-Gather hacia los tres adaptadores y las llamadas a las APIs externas.  
+La secuencia abre con el cache miss y la cota de 800 ms (Bound execution times). Caché de borde (CDN) envía fecha, hospedaje y compañía al API Gateway por HTTPS REST síncrono (paso 1). API Gateway pasa la solicitud al Balanceador de Carga por HTTP síncrono (paso 2) y el Balanceador la entrega a Orquestador de viajes (paso 3).  
+El orquestador invoca en paralelo y en memoria, de forma asíncrona, a Adaptador de aerolíneas (`IProveedorInventario`), Adaptador de hoteles (`ICotizadorHotel`) y Adaptador de arrendadoras (`IProveedorArrendadora`). Cada adaptador hace ping de alcance y, con eco, consulta disponibilidad y precio: dos mensajes síncronos. Aerolíneas usa SOAP/HTTPS con API Proveedor 2 (pasos 4a a 4e). Hoteles y arrendadoras usan HTTPS REST (pasos 5a a 5e y 6a a 6e). El eco, el precio y los datos traducidos vuelven al orquestador, que consolida la grilla, completa o parcial si venció la cota de un adaptador.  
+La grilla consolidada regresa por el Balanceador de Carga y el API Gateway hasta la caché (pasos 7 a 9). Si llega dentro de los 800 ms, la caché guarda la grilla fresca y la entrega a Cliente web. Si la cota vence, Graceful degradation cancela la espera y entrega la respuesta por defecto; el retorno del paso 9 actualiza la caché para consultas futuras.  
+Sirve para ver, en un solo recorrido, cómo la cotización web reparte la consulta entre las APIs, arma la grilla y cierra la cota de 800 ms con la respuesta fresca o con la respuesta por defecto.
