@@ -117,11 +117,11 @@ El sistema de las iteraciones 1 y 2 queda como está: clientes, Caché de borde,
 | --- | --- | --- | --- |
 | Modelo de reservas (`Reserva` y sus tipos, Registro de tipos) | Nuevo, dentro del Orquestador de viajes | Tier 2. Es un módulo interno del Orquestador. Reemplaza la agrupación sin tipos de hoy | `QA-EVO-01` |
 | `IProveedor` | Nuevo | Tier 2. Contrato que implementan los adaptadores | `QA-INT-01` |
-| Adaptadores de aerolíneas, hoteles y arrendadoras | Existentes. Ahora implementan `IProveedor`. Un hotel nuevo es otro módulo igual | Tier 2, junto al Orquestador | `QA-INT-01` |
-| Adaptador de anuncios (Booking) | Nuevo | Tier 2, junto a los demás adaptadores. Recibe el aviso externo | `QA-PER-01` |
+| Adaptadores de aerolíneas, hoteles y arrendadoras | Existentes. Ahora implementan `IProveedor`. Un hotel nuevo es otro módulo igual | Tier 2, desplegados con el Orquestador: este los invoca en memoria durante la cotización | `QA-INT-01` |
+| Adaptador de anuncios (Booking) | Nuevo | Tier 2, en nodos propios, junto a la ingesta. Recibe el aviso externo y solo habla con el broker | `QA-PER-01` |
 | Broker con tres colas | Nuevo | Entre los adaptadores y el Orquestador: es la pieza asíncrona del tier 2 | `QA-PER-01`, `REF-02`, `QA-INT-02` |
 | Servicio de ingesta | Nuevo | Tier 2, con nodos propios. Lee del broker y le entrega al Orquestador | `QA-PER-01`, `REF-02` |
-| Adaptador de correo | Existente en la iteración 1, ahora activo | Tier 2, junto a los demás adaptadores | `REF-02`, `CON-02` |
+| Adaptador de correo | Existente en la iteración 1, ahora activo | Tier 2, en nodos propios, junto a la ingesta. Solo habla con el broker | `REF-02`, `CON-02` |
 | Gestor de autorización del correo | Nuevo | Tier 2. Guarda los tokens cifrados en la base | `QA-SEG-03*` |
 | Parseo aislado | Nuevo | Tier 2, en un proceso separado y sin acceso a la base | `REF-02`, `QA-SEG-03*` |
 | Filtro de remitentes (whitelist) y Mensajes en revisión | Nuevo | Tier 2, entre el Parseo y la ingesta. Sus datos los guarda el Orquestador en la base | `REF-03` |
@@ -145,6 +145,11 @@ El Orquestador de viajes es el dueño de lo que se guarda: viajes, reservas, nov
 | Registro de tipos de reserva | Configuration-time binding: los tipos disponibles se cargan por configuración al desplegar. Alta de un tipo nuevo sin tocar la agrupación. | Interna: la agrupación consulta qué tipos existen. |
 
 ### Capa de integración de proveedores
+
+Hay dos tipos de adaptador y se despliegan distinto:
+
+- **Adaptadores de cotización** (aerolíneas, hoteles y arrendadoras). Los invoca el Orquestador, en memoria y en paralelo, mientras el usuario espera los 800 ms (`QA-PER-02`). Se despliegan con el Orquestador, como en la iteración 1. Separarlos sumaría una llamada de red por cada cotización.
+- **Adaptadores de entrada** (Booking y correo). No los invoca el Orquestador: reciben o buscan datos por su cuenta y los dejan en el broker. Se despliegan en nodos propios, junto a la ingesta, para que el pico de las 8 am de `QA-PER-01` no compita con las cotizaciones. Su único contacto con el resto del sistema es el broker.
 
 | Elemento | Responsabilidad | Interfaz |
 | --- | --- | --- |
