@@ -206,3 +206,63 @@ La secuencia abre con el cache miss y la cota de 800 ms (Bound execution times).
 El orquestador invoca en paralelo y en memoria, de forma asíncrona, a Adaptador de aerolíneas (`IProveedorInventario`), Adaptador de hoteles (`ICotizadorHotel`) y Adaptador de arrendadoras (`IProveedorArrendadora`). Cada adaptador hace ping de alcance y, con eco, consulta disponibilidad y precio: dos mensajes síncronos. Aerolíneas usa SOAP/HTTPS con API Proveedor 2 (pasos 4a a 4e). Hoteles y arrendadoras usan HTTPS REST (pasos 5a a 5e y 6a a 6e). El eco, el precio y los datos traducidos vuelven al orquestador, que consolida la grilla, completa o parcial si venció la cota de un adaptador.  
 La grilla consolidada regresa por el Balanceador de Carga y el API Gateway hasta la caché (pasos 7 a 9). Si llega dentro de los 800 ms, la caché guarda la grilla fresca y la entrega a Cliente web. Si la cota vence, Graceful degradation cancela la espera y entrega la respuesta por defecto; el retorno del paso 9 actualiza la caché para consultas futuras.  
 Sirve para ver, en un solo recorrido, cómo la cotización web reparte la consulta entre las APIs, arma la grilla y cierra la cota de 800 ms con la respuesta fresca o con la respuesta por defecto.
+
+## Paso 7. Analizar y revisar el purpose
+
+
+| Id del goal | Estado     | Una oración |
+| ----------- | ---------- | ----------- |
+| `QA-PER-02` | Completely | La Caché de borde (CDN) corta la espera en 800 ms ([ADR-IT2-001](ADRs/ITERACION_2/ADR-IT2-001.md)) y, si la cota vence, entrega la copia por defecto o la grilla parcial del orquestador ([ADR-IT2-002](ADRs/ITERACION_2/ADR-IT2-002.md)), mientras cada adaptador acota la espera de su API y detecta su silencio con Ping/Echo, sin Retry ([ADR-IT2-003](ADRs/ITERACION_2/ADR-IT2-003.md), [ADR-IT2-004](ADRs/ITERACION_2/ADR-IT2-004.md), [ADR-IT2-008](ADRs/ITERACION_2/ADR-IT2-008.md)). |
+| `QA-PER-03` | Completely | La misma Caché de borde (CDN) corta la espera en 1,4 s y entrega su copia por defecto del primer contenido si la respuesta fresca no llega ([ADR-IT2-001](ADRs/ITERACION_2/ADR-IT2-001.md), [ADR-IT2-002](ADRs/ITERACION_2/ADR-IT2-002.md)). |
+| `QA-DIS-01` | Completely | El Balanceador de Carga detecta con Ping/Echo al nodo caído, lo aísla y reenvía a un nodo sano lo que estaba en vuelo, y la Base pasiva, igual a la primaria por el commit en dos fases ([ADR-IT2-005](ADRs/ITERACION_2/ADR-IT2-005.md)), asume la carga con Reconfiguration si la primaria deja de atender ([ADR-IT2-006](ADRs/ITERACION_2/ADR-IT2-006.md)). |
+
+### Justificación del estado
+
+En la iteración 1 estos tres drivers quedaron `Partially`. Cada fila toma algo que estaba abierto (un hueco que dejó esa iteración o una parte del escenario sin cubrir) y dice qué lo cierra.
+
+
+| Id          | Qué estaba abierto | Cómo lo cierra la iteración 2 |
+| ----------- | ------------------ | ----------------------------- |
+| `QA-PER-02` | El umbral de espera no estaba fijado en ms. | La cota de espera es propiedad de cada adaptador y debe ser menor que la del goal ([ADR-IT2-003](ADRs/ITERACION_2/ADR-IT2-003.md)). No hace falta fijarla en el driver: lo que garantiza los 800 ms es la cota del borde ([ADR-IT2-001](ADRs/ITERACION_2/ADR-IT2-001.md)), que no depende de ese valor. El valor del adaptador solo decide cuántos orígenes alcanzan a entrar en la grilla. |
+| `QA-PER-02` | No se definió qué hace el sistema cuando una API no responde. | Ping/Echo detecta el silencio ([ADR-IT2-004](ADRs/ITERACION_2/ADR-IT2-004.md)). Sin eco, o vencida su cota, el adaptador informa que el origen no respondió y no pide el precio. El orquestador arma la grilla con los orígenes que respondieron y, si la cota del borde vence antes, la CDN entrega su copia ([ADR-IT2-002](ADRs/ITERACION_2/ADR-IT2-002.md), [ADR-IT2-003](ADRs/ITERACION_2/ADR-IT2-003.md)). Heartbeat ([ADR-IT2-007](ADRs/ITERACION_2/ADR-IT2-007.md)) y Retry ([ADR-IT2-008](ADRs/ITERACION_2/ADR-IT2-008.md)) quedan rechazados, cada uno con su motivo. |
+| `QA-PER-02` | La medida no estaba verificada. | En la iteración 1 el tiempo de la cotización dependía de tres APIs de terceros y nada lo acotaba, por eso solo una medición podía comprobarlo. Ahora la CDN corta la espera a los 800 ms desde que recibe el pedido: se demore la API que se demore, la respuesta sale dentro de la cota, y con eso el 90 % pedido queda cubierto por diseño. El tramo hasta el borde es el de la "conexión de red estándar" del escenario. Si la CDN ya tiene la grilla de esos criterios, el pedido ni llega al backend. |
+| `QA-PER-03` | El FCP de 1,4 s en 3G no estaba verificado. | Misma lógica que `QA-PER-02`: la CDN abre la cota de 1,4 s y, si el contenido fresco no llega, entrega la copia que ya tiene ([ADR-IT2-001](ADRs/ITERACION_2/ADR-IT2-001.md), [ADR-IT2-002](ADRs/ITERACION_2/ADR-IT2-002.md)). El primer contenido es el formulario de login, un recurso estático que el borde sirve desde su copia ([ADR-005](ADRs/ITERACION_1/ADR-005.md) de la iteración 1), y el miss con su cota es la red de seguridad. El tramo 3G hasta el borde es el contexto del escenario y el sistema no lo controla, por eso el camino normal tiene que ser la copia del borde. |
+| `QA-PER-03` | La app móvil no tenía diseño interno. | Lo que fija el primer contenido es de dónde sale y quién acota su espera, y eso queda decidido en el borde. El diseño interno de la app es materia de `QA-USA-01`, que entra en la iteración 4 y no modifica lo decidido en esta. |
+| `QA-DIS-01` | La sincronización de estado era solo una propuesta ([ADR-003](ADRs/ITERACION_1/ADR-003.md)). | [ADR-IT2-005](ADRs/ITERACION_2/ADR-IT2-005.md) la decide: commit en dos fases entre Base primaria y Base pasiva, y la escritura no se confirma hasta que las dos acuerdan. Es el trade-off del goal (consistencia por sobre latencia) y reemplaza la replicación asíncrona que mostraba la iteración 1. |
+| `QA-DIS-01` | No se aseguraba no perder peticiones en vuelo. | El escenario habla de dos tipos de petición. Una cotización en vuelo en un nodo caído se reenvía a un nodo sano: es de solo lectura sobre las APIs, repetirla no duplica nada y el reenvío sigue acotado por los 800 ms. Una escritura en vuelo no se confirma hasta que las dos copias acuerdan, así que no hay escritura confirmada que se pierda al conmutar. |
+| `QA-DIS-01` | El escenario pide detectar, aislar, redirigir y alertar sobre el balanceo, la cotización y la base. | En el Balanceador de Carga, Ping/Echo periódico a cada nodo detecta la falla, el nodo sin eco deja de recibir pedidos (aísla), Reconfiguration reasigna el tráfico a los nodos sanos (redirige) y se avisa a operaciones (alerta). Los nodos del Orquestador de viajes son copias idénticas sin estado propio, porque el estado vive en la base, y cualquiera atiende cualquier cotización (paso 5, sección del Balanceador de Carga; [ADR-002](ADRs/ITERACION_1/ADR-002.md) y [ADR-004](ADRs/ITERACION_1/ADR-004.md) de la iteración 1). En la base, la Base pasiva asume la carga ([ADR-IT2-006](ADRs/ITERACION_2/ADR-IT2-006.md)). |
+| `QA-DIS-01` | La medida: servicio transparente, con menos de 5 minutos de inactividad al mes. | La caída de un nodo es transparente: el tráfico sigue en los nodos sanos y, si el reenvío no llega a tiempo, la CDN entrega su copia por defecto. La cotización no depende del camino de escritura ([ADR-IT2-005](ADRs/ITERACION_2/ADR-IT2-005.md)), así que la caída de la Base primaria solo abre una ventana en las escrituras de viajes, el traspaso, y esa ventana es lo que consume el presupuesto de 5 minutos al mes. |
+
+### Trade-offs aceptados
+
+Cerrar los drivers tuvo un costo. Esto es lo que se sacrificó y a cambio de qué.
+
+
+| Driver | Qué se sacrifica | A cambio de |
+| ------ | ---------------- | ----------- |
+| `QA-PER-02`, `QA-PER-03` | Frescura y completitud: la copia por defecto puede estar desactualizada y la grilla puede salir parcial si un origen no responde ([ADR-IT2-001](ADRs/ITERACION_2/ADR-IT2-001.md), [ADR-IT2-002](ADRs/ITERACION_2/ADR-IT2-002.md), [ADR-IT2-003](ADRs/ITERACION_2/ADR-IT2-003.md)). | Que la respuesta cierre dentro de 800 ms y de 1,4 s aunque una API o un nodo se demore. |
+| `QA-DIS-01` | Latencia de escritura: el commit en dos fases retiene la confirmación hasta que las dos copias acuerdan, y el traspaso a la Base pasiva no es inmediato ([ADR-IT2-005](ADRs/ITERACION_2/ADR-IT2-005.md), [ADR-IT2-006](ADRs/ITERACION_2/ADR-IT2-006.md)). | Que no se pierda ninguna escritura confirmada si cae la Base primaria. |
+| Entre ambos | Consistencia sobre latencia en las escrituras, y latencia sobre frescura en las lecturas. | Los dos criterios conviven porque cada uno vive en su camino. La cotización no depende del camino de escritura. Cuando el miss del primer contenido del móvil pasa por una escritura (vista de secuencia del paso 6), la cota de 1,4 s del borde impide que ese costo llegue al usuario: se traduce en copia por defecto, no en espera. |
+
+### Riesgos residuales
+
+Quedan abiertos, y están registrados en los ADR. No cambian el estado de los drivers por lo que dice la última columna.
+
+
+| Riesgo | Registrado en | Por qué no cambia el estado |
+| ------ | ------------- | --------------------------- |
+| El valor en ms de la cota de cada adaptador, que se calibra con mediciones de cada proveedor (SOAP y REST). | [ADR-IT2-003](ADRs/ITERACION_2/ADR-IT2-003.md) | Cambia cuántos orígenes entran en la grilla, no el techo de 800 ms, que lo pone el borde. |
+| Las cotas de 800 ms y de 1,4 s dejan poco margen y hay que validarlas con pruebas de carga. Hoy no hay prototipo throwaway. | [ADR-IT2-001](ADRs/ITERACION_2/ADR-IT2-001.md) | El techo ya vale por diseño. La prueba ajusta el margen y el porcentaje de respuestas por defecto. |
+| El tiempo de vida de las copias y el aviso en la interfaz de que el dato puede no ser reciente. | [ADR-IT2-002](ADRs/ITERACION_2/ADR-IT2-002.md) | Es la frescura que ve el viajero, y la medida de los dos escenarios es de tiempo. |
+| Cómo se detecta la caída de la Base primaria, cómo se promueve la pasiva y cómo se evita el split-brain. | [ADR-IT2-006](ADRs/ITERACION_2/ADR-IT2-006.md) | La táctica, el elemento que conmuta y la interfaz (el JDBC pasa a Base pasiva) están decididos. El mecanismo es un detalle de esa táctica y se fija en el diseño detallado. |
+| Segunda falla: Base pasiva caída (la primaria no confirma sin ella) y falla doble tras conmutar (no queda otra copia). Faltan los timeouts y la política. | [ADR-IT2-005](ADRs/ITERACION_2/ADR-IT2-005.md), [ADR-IT2-006](ADRs/ITERACION_2/ADR-IT2-006.md) | El estímulo de `QA-DIS-01` es la caída de un nodo, no dos fallas encadenadas. |
+
+### Cierre de la iteración
+
+
+| Pregunta                    | Respuesta |
+| --------------------------- | --------- |
+| ¿Se cumplió el goal?        | Sí. `QA-PER-02`, `QA-PER-03` y `QA-DIS-01` quedan `Completely`. Para cada uno están decididas la táctica, el elemento que la ejecuta y su interfaz, y los huecos que dejó la iteración 1 están cerrados (justificación del estado). Lo que sigue abierto son valores de calibración y detalles de tácticas ya elegidas, que no cambian lo decidido (riesgos residuales). |
+| Purpose de la ronda         | Arquitectura greenfield del panel de viajes en web y móvil, guiada por los escenarios de [LISTADO_DRIVERS.md](LISTADO_DRIVERS.md) ([README.md](README.md), paso 1). Con esta iteración quedan resueltos `REF-01`, `CON-01`, `CON-02`, `QA-PER-02`, `QA-PER-03` y `QA-DIS-01`. |
+| ¿Hace falta otra iteración? | Sí. Quedan drivers de la ronda sin resolver. |
+| Entra en la siguiente       | 1) Iteración 3, la entrada de información externa: `QA-PER-01`, `QA-INT-01`, `QA-EVO-01`, `QA-INT-02`, `QA-SEG-03*`, `REF-02` y `REF-03`. Retry se reabre ahí solo para la ruta asíncrona, fuera del camino de la cotización, como dejó abierto [ADR-IT2-008](ADRs/ITERACION_2/ADR-IT2-008.md). 2) `QA-ESC-01` sigue `Partially` y se retoma en la iteración 4, con la restricción que deja [ADR-IT2-005](ADRs/ITERACION_2/ADR-IT2-005.md): el commit en dos fases no escala a multirregión sin penalidad de latencia, y el escenario pide registros desde 3 continentes con confirmación en menos de 2 segundos. 3) `QA-USA-01`, que incluye el diseño interno de la app móvil, queda para la iteración 4. 4) Siguen en `Not Yet` hasta la iteración 4: `QA-SEG-01`, `QA-SEG-02`, `QA-PER-04*`, `REF-04`, `REF-05` y `REF-06`. |
