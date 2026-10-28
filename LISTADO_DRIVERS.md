@@ -1,6 +1,6 @@
 # Listado de drivers
 
-Registro los escenarios con un rótulo estable para citarlos después en las iteraciones y en los ADR. El esquema es `QA-<atributo>-<nn>`: PER rendimiento, DIS disponibilidad, ESC escalabilidad, INT interoperabilidad, SEG seguridad. El número tiene dos dígitos y corre dentro de cada atributo.
+Registro los escenarios con un rótulo estable para citarlos después en las iteraciones y en los ADR. El esquema es `QA-<atributo>-<nn>`: PER rendimiento, DIS disponibilidad, ESC escalabilidad, INT interoperabilidad, SEG seguridad, EVO modificabilidad, USA usabilidad. El número tiene dos dígitos y corre dentro de cada atributo.
 
 El texto de cada campo es el que levantamos. En este paso lo ordeno en la plantilla, con las mismas etiquetas y el mismo orden de campos.
 
@@ -11,12 +11,16 @@ El texto de cada campo es el que levantamos. En este paso lo ordeno en la planti
 | `QA-PER-01` | Performance(Latencia) | Actualizacion de API externa(Booking) |
 | `QA-PER-02` | Performance(Latencia) | Nueva cotización de viaje seleccionando fecha,hospedaje y compañía. |
 | `QA-PER-03` | Performance(Latencia) | El usuario abre la aplicacion mobile. |
+| `QA-PER-04*` | Performance(Latencia) | Consulta de tendencias, destinos y cancelaciones de los viajes |
 | `QA-DIS-01` | Disponibilidad | Caída abrupta o falta de respuesta de un nodo de procesamiento de cotizacion |
 | `QA-ESC-01` | Escalabilidad | Registro masivo sostenido de 100.000 nuevos usuarios diarios. |
 | `QA-INT-01` | Interoperabilidad | La empresa firma un acuerdo comercial e instruye integrar la API propietaria de una nueva cadena de hoteles al sistema. |
-| `QA-INT-02` | Interoperabilidad | Solicitud de incorporar Instagram como nuevo canal de envío de propuestas e itinerarios a leads/clientes. |
+| `QA-INT-02` | Interoperabilidad | Solicitud de incorporar Instagram como nuevo canal de envío de propuestas e itinerarios a leads/clientes. |QA-USA-
 | `QA-SEG-01` | Seguridad y Privacidad (Security) | Ráfaga maliciosa de 50 solicitudes simultáneas de recuperación de contraseña/correo dirigidas a un mismo endpoint. |
 | `QA-SEG-02` | Seguridad y Privacidad (Security) | Intento de registrar una nueva actividad (ej. reserva de excursión) dentro del itinerario del viaje compartido. |
+| `QA-SEG-03*` | Seguridad y Privacidad (Security) | El titular autoriza la lectura de su correo para detectar mensajes de viaje |
+| `QA-EVO-01` | Modificabilidad | Pedido de integrar un medio de transporte que el panel todavía no agrupa en el viaje |
+| `QA-USA-01` | Usabilidad | El viajero consulta su viaje en el móvil, que dispone de capacidades nativas como el GPS |
 
 ## Escenario de Atributo de Calidad: Performance(Latencia) — QA-PER-01
 
@@ -59,6 +63,20 @@ El texto de cada campo es el que levantamos. En este paso lo ordeno en la planti
 | **Contexto:** | Conexion de red movil 3G en un aeropuerto |
 | **Respuesta:** | LA aplicacion renderiza el formulario de login |
 | **Medida de respuesta:** | First Contentful Paint (FCP) en menos de 1.4 segundos en el 90% de las sesiones |
+
+## Escenario de Atributo de Calidad: Performance(Latencia) — QA-PER-04*
+
+**Rótulo:** `QA-PER-04*`
+
+| Campo | Descripción / Redacción Técnica |
+| :--- | :--- |
+| **Atributo:** | Performance(Latencia) |
+| **Origen:** | Equipo de datos |
+| **Estímulo:** | Consulta de tendencias, destinos y cancelaciones de los viajes |
+| **Artefacto:** | Consultas analíticas de Trotamundos |
+| **Contexto:** | El panel está en operación: 2 millones de usuarios activos por semana, 15 millones de cuentas, y un pico de domingo a lunes, de jueves a viernes o de una disrupción de viajes |
+| **Respuesta:** | El equipo de datos obtiene las tendencias, los destinos y las cancelaciones |
+| **Medida de respuesta:** | El informe en promedio es procesado y generado antes de los 10 segundos |
 
 ## Escenario de Atributo de Calidad: Disponibilidad — QA-DIS-01
 
@@ -143,3 +161,45 @@ El texto de cada campo es el que levantamos. En este paso lo ordeno en la planti
 | **Contexto:** | Sistema en producción con usuarios autenticados activamente y permisos de grupo previamente configurados. |
 | **Respuesta:** | El sistema valida los permisos del usuario para el itinerario específico, persiste la nueva actividad, actualiza la vista para los demás miembros designados del grupo y registra la transacción. |
 | **Medida de respuesta:** | En el 100% de las solicitudes autorizadas, son procesadas exitosamente, no asi para aquellos que no posean permisos seran redirigidosa una pagina de "Error 401" |
+
+## Escenario de Atributo de Calidad: Seguridad y Privacidad (Security) — QA-SEG-03*
+
+**Rótulo:** `QA-SEG-03*`
+
+| Campo | Descripción / Redacción Técnica |
+| :--- | :--- |
+| **Atributo:** | Seguridad y Privacidad (Security) |
+| **Origen:** | Viajero titular del correo |
+| **Estímulo:** | Autoriza la lectura de su correo para detectar mensajes de viaje |
+| **Artefacto:** | Procesamiento de correo |
+| **Contexto:** | Operación normal del panel. Las reservas del viajero llegan por correo y deben sumarse a su itinerario |
+| **Respuesta:** | El sistema accede a ese correo solo con la autorización del titular, detecta los mensajes de viaje y agrega esas reservas a su itinerario |
+| **Medida de respuesta:** | EL 100% de usuarios autorizados y que han registrado su email, ven reflejadas las reservas en sus itinerarios. |
+
+## Escenario de Atributo de Calidad: Modificabilidad — QA-EVO-01
+
+**Rótulo:** `QA-EVO-01`
+
+| Campo | Descripción / Redacción Técnica |
+| :--- | :--- |
+| **Atributo:** | Modificabilidad |
+| **Origen:** | Equipo que evoluciona el producto |
+| **Estímulo:** | Pedido de integrar un medio de transporte que el panel todavía no agrupa en el viaje |
+| **Artefacto:** | Panel de reservas agrupadas por viaje |
+| **Contexto:** | El panel ya agrupa hoteles, autos, vuelos, trenes y autobuses, y está en operación |
+| **Respuesta:** | Las reservas del medio nuevo quedan agrupadas en el viaje junto con las reservas ya existentes |
+| **Medida de respuesta:** | El equipo de desarrollo incorpora un nuevo medio de transporte en el plazo de 3 meses de ezfuerzo de desarrollo |
+
+## Escenario de Atributo de Calidad: Usabilidad — QA-USA-01
+
+**Rótulo:** `QA-USA-01`
+
+| Campo | Descripción / Redacción Técnica |
+| :--- | :--- |
+| **Atributo:** | Usabilidad |
+| **Origen:** | Viajero desde su dispositivo móvil |
+| **Estímulo:** | Consulta su viaje en el móvil, que dispone de capacidades nativas como el GPS |
+| **Artefacto:** | Aplicación móvil del panel |
+| **Contexto:** | El viajero usa el móvil durante el viaje |
+| **Respuesta:** | El panel muestra el viaje en una interfaz que aprovecha esa capacidad nativa |
+| **Medida de respuesta:** | El nivel de satisfaccion de los usuarios en las app store es mayor a 3.5 estrellas en promedio

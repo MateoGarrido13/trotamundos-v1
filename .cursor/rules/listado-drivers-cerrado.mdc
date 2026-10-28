@@ -1,0 +1,14 @@
+---
+description: LISTADO_DRIVERS.md está verificado y autorizado. No modificarlo sin confirmación explícita del usuario.
+alwaysApply: true
+---
+
+# Listado de drivers cerrado
+
+`LISTADO_DRIVERS.md` está verificado y autorizado por los desarrolladores.
+
+No editar ese archivo, ni una parte, hasta proponer el cambio y recibir un sí explícito en el mensaje del usuario. Citarlo, leerlo y usarlo como fuente no requiere permiso.
+
+Si otro archivo (README, iteración, ADR) pide un cambio que solo se cumple tocando el listado, dejar el listado como está y preguntar antes.
+
+Esos archivos solo pueden citar los rótulos de `LISTADO_DRIVERS.md`. No introducir otro driver de la arquitectura: ni un id nuevo, ni un caso de uso, concern o constraint tratado como driver.
