@@ -5,7 +5,7 @@
 * **Decisores:** Mateo Garrido
 
 ## Contexto y Declaración del Problema
-Aun con las copias sincronizadas por el ADR-IT2-05, la caída de la Base primaria dejaría al sistema sin poder atender las escrituras. El sistema es de uso global, debe estar accesible en todo momento y tolera como máximo 5 minutos de inactividad no planificada por mes. Hay que definir qué táctica reasigna la carga a la copia viva.
+Aun con las copias sincronizadas por el ADR-IT2-004, la caída de la Base primaria dejaría al sistema sin poder atender las escrituras. El sistema es de uso global, debe estar accesible en todo momento y tolera como máximo 5 minutos de inactividad no planificada por mes. Hay que definir qué táctica reasigna la carga a la copia viva.
 
 ## Impulsores de la Decisión (Decision Drivers)
 * `QA-DIS-01`: si cae el nodo principal, la carga debe delegarse para seguir atendiendo peticiones.
