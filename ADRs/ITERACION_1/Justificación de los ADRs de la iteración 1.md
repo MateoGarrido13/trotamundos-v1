@@ -113,10 +113,3 @@ Beneficia cuando las transacciones compiten con reportes pesados (`REF-06`, `QA-
 ### ADR-013. Service Discovery (rechazado)
 
 Con un único gateway y un clúster detrás de un balanceador, los endpoints internos son estáticos. El balanceador ya hace de descubrimiento del lado del servidor, así que el componente solo sumaría infraestructura. **Cuándo reabrirlo:** si se migra a microservicios (ADR-009) o si el autoescalado de los picos crea instancias con direcciones dinámicas que el balanceador no cubra.
-
-## Observaciones transversales
-
-- **Listas de opciones mezcladas.** ADR-002, 003 y 010 comparan tácticas de categorías distintas (detección vs. recuperación). El rechazo de Heartbeat se entiende, pero no es un trade-off real contra Redundant spare. Conviene comparar dentro de la misma categoría.
-- **Drivers fuera del goal.** `QA-DIS-01` se cita en ADR-002/003/004/010 pese a estar fuera del goal. Los drivers que sí justifican el clúster son `QA-PER-02` y `QA-ESC-01`.
-- **Estilos rechazados sin sus escenarios.** ADR-009 y 011 no nombran `QA-INT-01`, `QA-INT-02` ni `QA-EVO-01`, que son lo que se resigna al descartarlos. Nombrarlos hace el trade-off honesto y deja claro cuándo reabrir la decisión.
-- **Riesgos sin mitigación escrita.** El ping en el camino crítico, la caché sin TTL y la validación de sesión por request.
