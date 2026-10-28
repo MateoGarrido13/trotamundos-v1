@@ -43,3 +43,24 @@ El paso 1 de la ronda está en [README.md](README.md).
 
 
 El sistema se descompone para fijar la topología del Core: el punto en el que el viajero consulta sus reservas agrupadas por viaje, desde la web y desde el móvil.
+
+## Paso 4. Elegir los conceptos de diseño
+
+| Alternativa | Tipo | Beneficia | Perjudica | Queda |
+| ----------- | ---- | --------- | --------- | ----- |
+| N-Tier (capas / three-tier) | Estilo | Separa presentación, lógica de negocio y datos, sobre una base tradicional y probada (`QA-ESC-01`, `QA-INT-01`). | Las capas se escalan juntas con menos granularidad que servicios independientes. | Sí |
+| Microservicios | Estilo | Servicios independientes y cohesivos (ej. Usuarios, Cotizaciones). | Suma complejidad operativa y de coordinación distribuida. | No |
+| Micro-kernel (plugins) | Estilo | Kernel mínimo con funcionalidades acoplables; alta extensibilidad local. | Menos apto para despliegues distribuidos de alta concurrencia (`QA-ESC-01`, `QA-PER-02`). | No |
+| Redundant spare | Táctica (disponibilidad) | Un componente duplicado toma el control si falla el primario (hot, warm o cold spare) (`QA-DIS-01`). | Costo de mantener componentes duplicados. | Sí |
+| State resynchronization | Táctica (disponibilidad) | Mantiene sincronizado el estado entre el componente activo y el de respaldo (ej. checksum o hash). | Tráfico y lógica extra para sincronizar. | Sí |
+| Heartbeat / Ping-Echo | Táctica (disponibilidad) | Detecta fallos silenciosos con mensajes periódicos a un monitor. | Agrega mensajería de monitoreo. | No |
+| Múltiples copias de datos (caché) | Táctica (performance) | Guarda cotizaciones previas y respuestas estáticas (`QA-PER-02`). | Los datos pueden estar desactualizados; hay que invalidar. | Sí |
+| Procesamiento concurrente (Scatter-Gather) | Táctica (performance) | Paraleliza consultas a varios orígenes y evita sumar latencias en forma lineal (`QA-PER-02`). | Más complejidad de coordinación y manejo de respuestas parciales. | Sí |
+| Priorización de recursos | Táctica (performance) | Da más hilos a transacciones críticas (ej. cotizaciones web) frente a reportes analíticos. | Requiere políticas de asignación. | No |
+| Capa Anti-Corrupción (ACL) / Adaptadores | Táctica (interoperabilidad) | Aísla el modelo de dominio interno del contrato externo (`QA-INT-01`). | Una capa extra de traducción. | Sí |
+| API Gateway | Táctica (interoperabilidad) | Unifica el punto de entrada para clientes móviles y web. | Es un punto único que hay que dimensionar y hacer redundante. | Sí |
+| Service Discovery | Táctica (interoperabilidad) | Registro dinámico de endpoints internos, sin IPs fijas. | Componente adicional de infraestructura. | No |
+
+Tácticas que quedan: Redundant spare, State resynchronization, Múltiples copias de datos (caché), Procesamiento concurrente (Scatter-Gather), Capa Anti-Corrupción (ACL) / Adaptadores y API Gateway.
+
+Prototipo throwaway: ninguno por ahora.
