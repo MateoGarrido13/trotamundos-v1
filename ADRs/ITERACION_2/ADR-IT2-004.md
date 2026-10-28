@@ -24,7 +24,7 @@ Detalle: Orquestador de viajes escribe en Base primaria por JDBC; Base primaria 
 
 ### Consecuencias Positivas (Beneficios)
 * Consistencia fuerte entre copias: sin pérdida de escrituras confirmadas ante una falla de la primaria.
-* La Base pasiva queda lista para ser promovida (ADR-IT2-06).
+* La Base pasiva queda lista para ser promovida (ADR-IT2-05).
 * Semántica atómica, consistente, aislada y durable para las escrituras de viajes.
 
 ### Consecuencias Negativas (Trade-offs / Riesgos)
