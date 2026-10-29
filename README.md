@@ -48,7 +48,7 @@ Estados del Kanban: `Not Yet`, `Partially`, `Completely`, `Discarded`.
 
 El paso 2, en la primera iteración, elige un goal entre estos ids. Esta revisión no lo elige.
 
-## Cómo trabajamos
+## Cómo se trabajó
 
 Cada iteración sigue los siete pasos del ADD sobre la plantilla [ITERACION_ADD_TEMPLATE.md](ITERACION_ADD_TEMPLATE.md). El paso 1 es este README. Los pasos 2 a 7 están en `ITERACION_N.md`: el goal, los elementos a refinar, los conceptos de diseño comparados, los componentes e interfaces, las vistas con sus ADRs y la verificación final de cada driver.
 
