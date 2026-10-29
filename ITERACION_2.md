@@ -222,6 +222,20 @@ El orquestador invoca en paralelo y en memoria, de forma asíncrona, a Adaptador
 La grilla consolidada regresa por el Balanceador de Carga y el API Gateway hasta la caché (pasos 7 a 9). Si llega dentro de los 800 ms, la caché guarda la grilla fresca y la entrega a Cliente web. Si la cota vence, Graceful degradation cancela la espera y entrega la respuesta por defecto; el retorno del paso 9 actualiza la caché para consultas futuras.  
 Sirve para ver, en un solo recorrido, cómo la cotización web reparte la consulta entre las APIs, arma la grilla y cierra la cota de 800 ms con la respuesta fresca o con la respuesta por defecto.
 
+### Catálogo
+
+Decisiones de diseño registradas en [ADRs/ITERACION_2](ADRs/ITERACION_2/).
+
+| ID | Decisión | Estado |
+| --- | --- | --- |
+| ADR-IT2-001 | [Bound execution times en la Caché de borde](ADRs/ITERACION_2/ADR-IT2-001.md) | aceptado |
+| ADR-IT2-002 | [Graceful degradation](ADRs/ITERACION_2/ADR-IT2-002.md) | aceptado |
+| ADR-IT2-003 | [Cota de espera por adaptador, sin Retry](ADRs/ITERACION_2/ADR-IT2-003.md) | aceptado |
+| ADR-IT2-004 | [Sincronizar Base primaria y Base pasiva con Transactions (commit en dos fases), priorizando consistencia sobre latencia](ADRs/ITERACION_2/ADR-IT2-004.md) | aceptado |
+| ADR-IT2-005 | [Reconfiguration: conmutación a la Base pasiva](ADRs/ITERACION_2/ADR-IT2-005.md) | aceptado |
+| ADR-IT2-006 | [Retry](ADRs/ITERACION_2/ADR-IT2-006.md) | rechazado |
+
+
 ## Paso 7. Analizar y revisar el purpose
 
 
