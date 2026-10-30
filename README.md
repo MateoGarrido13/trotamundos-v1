@@ -13,6 +13,8 @@ Esta wiki registra las iteraciones, los ADRs, las vistas y los contratoa; a lo l
 
 Los drivers de la arquitectura son los de [LISTADO_DRIVERS.md](LISTADO_DRIVERS.md). No hay otro.
 
+**Criterio sobre los escenarios.** A partir de la narrativa general del enunciado se instanciaron en [LISTADO_DRIVERS.md](LISTADO_DRIVERS.md) escenarios de atributos de calidad más específicos —como la cotización web bajo carga concurrente (`QA-PER-02`), la ingesta de novedades de proveedores en pico horario (`QA-PER-01`), el alta masiva en tres continentes (`QA-ESC-01`) o la salida por canales como Instagram (`QA-INT-02`)— para bajar los objetivos de calidad a un caso real y acotado que guíe las decisiones de diseño. Esos escenarios se fijaron en el análisis inicial y operan como drivers inmutables durante todo el proceso ADD.
+
 ### Entradas
 
 | Clase | Ids vigentes | Hueco o supuesto de esta ronda |
