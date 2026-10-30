@@ -47,3 +47,55 @@ Letras del Utility Tree: (importancia de negocio, riesgo técnico). Estado inici
 Estados del Kanban: `Not Yet`, `Partially`, `Completely`, `Discarded`.
 
 El paso 2, en la primera iteración, elige un goal entre estos ids. Esta revisión no lo elige.
+
+## Cómo se trabajó
+
+Cada iteración sigue los siete pasos del ADD sobre la plantilla [ITERACION_ADD_TEMPLATE.md](ITERACION_ADD_TEMPLATE.md). El paso 1 es este README. Los pasos 2 a 7 están en `ITERACION_N.md`: el goal, los elementos a refinar, los conceptos de diseño comparados, los componentes e interfaces, las vistas con sus ADRs y la verificación final de cada driver.
+
+Las decisiones se tomaron así:
+
+- **Se comparan alternativas.** En el paso 4 cada estilo o táctica se registra con lo que beneficia, lo que perjudica y si queda o no. Las descartadas también tienen ADR (`rechazado`), con su motivo y la condición para reabrirlas.
+- **Un ADR por decisión, en formato MADR** ([ADR_TEMPLATE.md](ADR_TEMPLATE.md)): contexto, impulsores, opciones, resultado y consecuencias positivas y negativas.
+- **Cada iteración cierra con una verificación por driver.** Cada uno queda en `Not Yet`, `Partially`, `Completely` o `Discarded`, con una oración que lo justifica y enlaza a los ADRs. Lo que queda parcial vuelve como entrada de la iteración siguiente.
+- **Los trade-offs se declaran.** El paso 7 lista lo que se sacrificó y los riesgos que quedan abiertos.
+- **Cada iteración tiene una justificación** que revisa sus ADRs: por qué se eligió cada uno, qué se pagó y qué alternativa quedó más cerca de ganar.
+- **Enfoque spec-driven.** Los escenarios usan una plantilla fija ([ESCENARIO_QA_TEMPLATE.md](ESCENARIO_QA_TEMPLATE.md)) y los identificadores de drivers y ADRs son estables, para poder rastrear cada decisión hasta el escenario que la motivó.
+
+## Evolución de las iteraciones
+
+| Iteración | Goal | Drivers en el goal | ADRs | Documentos |
+| :--- | :--- | :--- | :--- | :--- |
+| **1** | Topología global del Core | `REF-01`, `CON-01`, `CON-02`, `QA-PER-02`, `QA-PER-03`, `QA-ESC-01` | 13 (7 aceptados, 1 propuesto, 5 rechazados) | [Iteración](ITERACION_1.md) · [ADRs](ADRs/ITERACION_1/) |
+| **2** | Caché, interacción con APIs y sincronización de copias | `QA-PER-02`, `QA-PER-03`, `QA-DIS-01` | 6 (5 aceptados, 1 rechazado) | [Iteración](ITERACION_2.md) · [ADRs](ADRs/ITERACION_2/) |
+| **3** | Entrada y salida de información externa y extensibilidad del Core | `QA-PER-01`, `QA-INT-01`, `QA-INT-02`, `QA-EVO-01`, `QA-SEG-03*`, `REF-02`, `REF-03` | 15 (10 aceptados, 5 rechazados) | [Iteración](ITERACION_3.md) · [ADRs](ADRs/ITERACION_3/) |
+
+**Iteración 1: la topología del Core.** Se descompuso el sistema en tres tiers (N-Tier), con un componente de integración dentro del tier de negocio. Se eligió N-Tier sobre Microservicios y Micro-kernel porque separa presentación, lógica y datos sin sumar la complejidad operativa de los servicios distribuidos. Sobre esa base se aceptaron caché de borde y Scatter-Gather para la latencia, una capa anti-corrupción con un adaptador por proveedor y un API Gateway como única entrada para la interoperabilidad, y Redundant spare con Ping/Echo para la disponibilidad. `REF-01`, `CON-01` y `CON-02` quedaron `Completely`. Los demás quedaron `Partially`, con huecos explícitos: las cotas de tiempo, qué hacer cuando una API no responde y cómo sincronizar las bases.
+
+**Iteración 2: cotas de tiempo, degradación y consistencia.** La latencia dominante es la de los proveedores externos, que el sistema no controla, así que la única forma de garantizar 800 ms y 1,4 s es que la caché de borde corte la espera y responda igual. Se combinaron *Bound execution times* y *Graceful degradation*, y se sacrificó completitud y frescura a cambio de cumplir el tiempo. Cada adaptador tiene su propia cota de espera y se rechazó *Retry* en esa ruta. Para la caída de un nodo, el goal prioriza la consistencia sobre la latencia: *Transactions* (commit en dos fases) entre Base primaria y Base pasiva, y *Reconfiguration* para promover la pasiva. `QA-PER-02`, `QA-PER-03` y `QA-DIS-01` quedaron `Completely`.
+
+**Iteración 3: ingesta externa y extensibilidad.** Las novedades de Booking, el correo y las notificaciones no tienen un usuario esperando y no deben competir con la cotización en el pico de las 8 am. Se introdujo un Broker con tres colas acotadas, con ingesta en nodos propios y *Retry* con identificador único solo en las rutas asíncronas, lo que reabre con motivo el rechazo de la iteración 2. Se abstrajeron proveedores y canales detrás de contratos comunes (`IProveedor`, `ICanal`) y se modeló `Reserva` de forma polimórfica, para que un hotel, un canal o un medio de transporte nuevos sean una implementación más. Para el correo se eligió acceso delegado con revocación, parseo aislado del contenido y una whitelist con cola de revisión en lugar de descartar mensajes. Los siete drivers del goal quedaron `Completely`.
+
+**Iteración 4:.** Retoma lo que dejó abierto la iteración 3: el escalado de escrituras y la distribución entre continentes para el registro masivo (`QA-ESC-01`), la seguridad del login y de los itinerarios compartidos (`QA-SEG-01`, `QA-SEG-02`), las consultas analíticas sin impactar al Core (`REF-06`, `QA-PER-04*`), la gestión manual de reservas y la agencia de viajes preferida (`REF-04`, `REF-05`) y las capacidades nativas del móvil (`QA-USA-01`).
+
+## Estado de los drivers
+
+Al cierre de la iteración 3:
+
+| Estado | Drivers |
+| :--- | :--- |
+| `Completely` | `REF-01`, `REF-02`, `REF-03`, `CON-01`, `CON-02`, `QA-PER-01`, `QA-PER-02`, `QA-PER-03`, `QA-DIS-01`, `QA-INT-01`, `QA-INT-02`, `QA-EVO-01`, `QA-SEG-03*` |
+| `Partially` | `QA-ESC-01` |
+| `Not Yet` | `QA-SEG-01`, `QA-SEG-02`, `QA-PER-04*`, `QA-USA-01`, `REF-04`, `REF-05`, `REF-06` |
+
+## Contenido del repositorio
+
+- **`ADRs/`**: los registros de decisión de cada iteración (`ITERACION_1` a `ITERACION_3`), más un documento de justificación por iteración.
+- **`vistas/`**: las vistas de componentes y conectores y los diagramas de secuencia, en SVG.
+- **`ITERACION_N.md`**: el desarrollo de cada iteración, del paso 2 al 7.
+- **`LISTADO_DRIVERS.md`**: los escenarios, requerimientos y restricciones que guían el diseño.
+- **Plantillas** (`ADR_TEMPLATE.md`, `ESCENARIO_QA_TEMPLATE.md`, `ITERACION_ADD_TEMPLATE.md`): los formatos que usan los demás documentos.
+- **`TPE - Diseño de Sistemas de Software.pdf`**: el enunciado.
+
+## Segunda Parte
+
+Esta es la primera entrega: deja el diseño del Core, la ingesta externa y la extensibilidad documentados en tres iteraciones, con 34 decisiones registradas y justificadas. Queda pendiente una segunda parte, que consistirá en incorporar al diseño al menos uno de los requerimientos avanzados del enunciado (sistema de recomendación o asistente virtual) y en desarrollar un prototipo que demuestre la viabilidad de la arquitectura, con código trazable a los ADRs y a los contratos definidos.

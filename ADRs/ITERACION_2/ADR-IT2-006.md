@@ -1,34 +1,28 @@
-# Aplicar Reconfiguration para delegar la carga en la Base pasiva cuando cae la Base primaria
+# Reintentar los pedidos a las APIs de proveedores externos ante silencio (Retry)
 
-* **Estado:** aceptado
+* **Estado:** rechazado
 * **Fecha:** 2026-10-28
-* **Decisores:** Mateo Garrido
+* **Decisores:** Yaco Recroa
 
 ## Contexto y Declaración del Problema
-Aun con las copias sincronizadas por el ADR-IT2-05, la caída de la Base primaria dejaría al sistema sin poder atender las escrituras. El sistema es de uso global, debe estar accesible en todo momento y tolera como máximo 5 minutos de inactividad no planificada por mes. Hay que definir qué táctica reasigna la carga a la copia viva.
+Cuando una API de proveedor no responde, puede tratarse de un silencio transitorio. Retry es una táctica de disponibilidad que repite el pedido, con un límite de reintentos, esperando que tenga éxito. La iteración 2 la evaluó en el paso 4 para el camino de cotización, en el que el Orquestador de viajes consulta en paralelo a los adaptadores de aerolíneas, hoteles y arrendadoras.
 
 ## Impulsores de la Decisión (Decision Drivers)
-* `QA-DIS-01`: si cae el nodo principal, la carga debe delegarse para seguir atendiendo peticiones.
-* Menos de 5 minutos de inactividad al mes.
-* Ya existe una Base pasiva (*Redundant spare*) con estado consistente gracias al commit en dos fases.
+* `QA-PER-02`: la cotización debe cerrar en 800 ms para el 90 % de las peticiones.
+* Las llamadas a las APIs externas son síncronas y su latencia no es controlable.
+* La grilla puede entregarse parcial (Graceful degradation) sin dejar de cumplir la función crítica.
 
 ## Opciones Consideradas
-* Opción 1: Reconfiguration: reasignar responsabilidades a los recursos que siguen funcionando; el JDBC de Orquestador de viajes pasa a Base pasiva.
-* Opción 2: Recuperación manual de la Base primaria (intervención operativa).
-* Opción 3: Graceful degradation solamente (modo solo lectura sin promover la pasiva).
+* Opción 1: Retry con límite de reintentos en cada adaptador.
+* Opción 2: Sin Retry; cota de espera por adaptador y degradación a grilla parcial o a la copia en caché.
 
 ## Resultado de la Decisión
-Opción elegida: **"Opción 1: Reconfiguration"**, porque aprovecha la copia pasiva ya sincronizada para seguir atendiendo escrituras sin esperar la recuperación de la primaria, acotando la inactividad dentro del presupuesto mensual. La recuperación manual (Opción 2) no garantiza el tiempo, y degradar a solo lectura (Opción 3) sacrifica una función crítica.
-
-Detalle: cuando Base primaria deja de atender, el JDBC de Orquestador de viajes conmuta a Base pasiva, que pasa a ser la copia que atiende. El traspaso no es inmediato. El mecanismo concreto de detección de la caída y de promoción debe definirse en una iteración posterior de detalle.
+Opción elegida: **"Opción 2: sin Retry"** (ver ADR-IT2-02 y ADR-IT2-03). La **Opción 1 (Retry) queda rechazada**, porque sumar intentos bloqueantes contra las APIs externas compromete la cota de 800 ms de `QA-PER-02`: un timeout largo se paga en latencia, y uno corto saca de la grilla una API que aún podía responder, perjudicando la disponibilidad de ese origen. Es preferible degradar y devolver lo que se tenga o la copia en caché.
 
 ### Consecuencias Positivas (Beneficios)
-* El sistema sigue atendiendo peticiones ante la caída del nodo principal.
-* Respeta el presupuesto de 5 minutos al mes siempre que el traspaso sea breve.
-* Reutiliza la redundancia y la sincronización ya decididas.
+* La latencia de la cotización queda acotada y predecible.
+* Se evita multiplicar la carga sobre proveedores que ya están lentos o con fallas.
 
 ### Consecuencias Negativas (Trade-offs / Riesgos)
-* El traspaso no es inmediato: se paga en latencia durante la conmutación.
-* La función que no puede reasignarse se sacrifica en disponibilidad durante ese lapso.
-* Tras la conmutación no queda otra copia pasiva hasta restaurar un nuevo respaldo; riesgo de falla doble.
-* Riesgo de *split-brain* si no se define con precisión cómo se detecta la caída y se evita que la primaria vuelva a aceptar escrituras.
+* Una falla transitoria que un reintento habría resuelto se traduce en una grilla parcial.
+* Si más adelante se necesita recuperar orígenes perdidos, podría evaluarse un reintento asíncrono fuera del camino de la cotización.

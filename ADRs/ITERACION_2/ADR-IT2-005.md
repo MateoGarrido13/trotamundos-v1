@@ -1,34 +1,34 @@
-# Sincronizar Base primaria y Base pasiva con Transactions (commit en dos fases), priorizando consistencia sobre latencia
+# Aplicar Reconfiguration para delegar la carga en la Base pasiva cuando cae la Base primaria
 
 * **Estado:** aceptado
 * **Fecha:** 2026-10-28
-* **Decisores:** Santiago Otaño
+* **Decisores:** Mateo Garrido
 
 ## Contexto y Declaración del Problema
-La iteración 1 dejó propuesta una Base pasiva como *Redundant spare* de la Base primaria, con *State resynchronization* para mantenerlas sincronizadas, pero el modo de intercambio quedó sin especificar (en la vista de la iteración 1 el conector TCP aparece como replicación binaria continua asíncrona). Hay que decidir cómo se confirman las escrituras entre las dos copias: si cae la primaria, la pasiva debe tener exactamente el mismo estado, porque el sistema agrupa reservas de viajeros que son el "único punto de verdad" de sus arreglos de viaje.
+Aun con las copias sincronizadas por el ADR-IT2-004, la caída de la Base primaria dejaría al sistema sin poder atender las escrituras. El sistema es de uso global, debe estar accesible en todo momento y tolera como máximo 5 minutos de inactividad no planificada por mes. Hay que definir qué táctica reasigna la carga a la copia viva.
 
 ## Impulsores de la Decisión (Decision Drivers)
-* `QA-DIS-01`: ante la caída de un nodo, el trade-off del goal prioriza la consistencia por sobre la performance en latencia.
-* Disponibilidad: menos de 5 minutos de inactividad no planificada al mes.
-* Los datos de reservas no deben perderse ni quedar divergentes tras una conmutación.
+* `QA-DIS-01`: si cae el nodo principal, la carga debe delegarse para seguir atendiendo peticiones.
+* Menos de 5 minutos de inactividad al mes.
+* Ya existe una Base pasiva (*Redundant spare*) con estado consistente gracias al commit en dos fases.
 
 ## Opciones Consideradas
-* Opción 1: Transactions: commit en dos fases (2PC) entre Base primaria y Base pasiva sobre TCP; la escritura se retiene hasta que ambas acuerdan.
-* Opción 2: Replicación asíncrona continua (confirma en la primaria y replica después).
-* Opción 3: Replicación semisíncrona o por quórum.
+* Opción 1: Reconfiguration: reasignar responsabilidades a los recursos que siguen funcionando; el JDBC de Orquestador de viajes pasa a Base pasiva.
+* Opción 2: Recuperación manual de la Base primaria (intervención operativa).
+* Opción 3: Graceful degradation solamente (modo solo lectura sin promover la pasiva).
 
 ## Resultado de la Decisión
-Opción elegida: **"Opción 1: Transactions (commit en dos fases)"**, porque garantiza que la copia pasiva (*Redundant spare*) esté exactamente igual que la primaria en cada escritura confirmada (*State resynchronization* resuelta mediante la transacción), cumpliendo la prioridad de consistencia de `QA-DIS-01`. La replicación asíncrona permitiría perder escrituras ya confirmadas al conmutar.
+Opción elegida: **"Opción 1: Reconfiguration"**, porque aprovecha la copia pasiva ya sincronizada para seguir atendiendo escrituras sin esperar la recuperación de la primaria, acotando la inactividad dentro del presupuesto mensual. La recuperación manual (Opción 2) no garantiza el tiempo, y degradar a solo lectura (Opción 3) sacrifica una función crítica.
 
-Detalle: Orquestador de viajes escribe en Base primaria por JDBC; Base primaria no confirma éxito hasta que Base pasiva acuerda. Esto reemplaza lo que la iteración 1 describía como replicación asíncrona en el conector TCP entre ambas bases; la vista de componentes y conectores debe actualizarse.
+Detalle: cuando Base primaria deja de atender, el JDBC de Orquestador de viajes conmuta a Base pasiva, que pasa a ser la copia que atiende. El traspaso no es inmediato. El mecanismo concreto de detección de la caída y de promoción debe definirse en una iteración posterior de detalle.
 
 ### Consecuencias Positivas (Beneficios)
-* Consistencia fuerte entre copias: sin pérdida de escrituras confirmadas ante una falla de la primaria.
-* La Base pasiva queda lista para ser promovida (ADR-IT2-06).
-* Semántica atómica, consistente, aislada y durable para las escrituras de viajes.
+* El sistema sigue atendiendo peticiones ante la caída del nodo principal.
+* Respeta el presupuesto de 5 minutos al mes siempre que el traspaso sea breve.
+* Reutiliza la redundancia y la sincronización ya decididas.
 
 ### Consecuencias Negativas (Trade-offs / Riesgos)
-* Se paga fuertemente en latencia de escritura: la escritura se retiene hasta que ambas copias acuerdan.
-* Si la Base pasiva no responde, la primaria no puede confirmar escrituras (riesgo de bloqueo), lo que afecta la disponibilidad; hay que definir timeouts y política ante pasiva caída.
-* El 2PC no escala a muchas réplicas ni a multirregión sin penalidad de latencia; revisar al abordar escalabilidad (`QA-ESC-01`) e internacionalización.
-* La lectura/cotización (`QA-PER-02`) no depende de este camino, pero las escrituras de viajes sí.
+* El traspaso no es inmediato: se paga en latencia durante la conmutación.
+* La función que no puede reasignarse se sacrifica en disponibilidad durante ese lapso.
+* Tras la conmutación no queda otra copia pasiva hasta restaurar un nuevo respaldo; riesgo de falla doble.
+* Riesgo de *split-brain* si no se define con precisión cómo se detecta la caída y se evita que la primaria vuelva a aceptar escrituras.

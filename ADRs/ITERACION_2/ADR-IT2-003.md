@@ -21,7 +21,7 @@ En el *cache miss*, el Orquestador de viajes dispara en paralelo (Scatter-Gather
 ## Resultado de la Decisión
 Opción elegida: **"Opción 1: cota de espera en cada adaptador, sin Retry"**, porque sumar intentos bloqueantes contra las APIs externas compromete la cota de 800 ms de `QA-PER-02`: un timeout largo se paga en latencia y uno corto saca de la grilla una API que aún podía responder. Es preferible degradar (ADR-IT2-02) y devolver lo disponible o la copia en caché. Sin cota propia (Opción 3), un solo proveedor lento consumiría toda la cota del borde y retrasaría a los demás.
 
-Cada adaptador: traduce el contrato del proveedor al modelo interno (ACL), verifica alcance con Ping/Echo (ADR-IT2-04) y, con eco, pide el precio por la misma llamada síncrona. Sin eco, o vencida su cota, informa a Orquestador de viajes que ese origen no respondió y no continúa con el pedido de precio. El valor en milisegundos de la cota se define por adaptador y debe ser menor que la del goal.
+Cada adaptador: traduce el contrato del proveedor al modelo interno (ACL), verifica alcance con Ping/Echo ([ADR-004](../ITERACION_1/ADR-004.md)) y, con eco, pide el precio por la misma llamada síncrona. Sin eco, o vencida su cota, informa a Orquestador de viajes que ese origen no respondió y no continúa con el pedido de precio. El valor en milisegundos de la cota se define por adaptador y debe ser menor que la del goal.
 
 ### Consecuencias Positivas (Beneficios)
 * Aislamiento de fallas: un proveedor lento o caído solo afecta a su propio origen.
