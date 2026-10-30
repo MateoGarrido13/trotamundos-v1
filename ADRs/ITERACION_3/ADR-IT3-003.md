@@ -22,6 +22,10 @@ En la iteración 2 se rechazó Retry porque los reintentos bloqueantes contra la
 ## Resultado de la Decisión
 Opción elegida: **"Opción 1: Retry acotado con identificador único e idempotencia, solo en la ruta asíncrona"**, porque el motivo del rechazo de la iteración 2 (la cota de 800 ms con un usuario esperando) no aplica a esta ruta. Cada mensaje lleva un identificador único; el Servicio de ingesta y el Servicio de notificaciones descartan los duplicados. Esto compensa los mensajes que Bound queue sizes ([ADR-IT3-002](ADR-IT3-002.md)) pueda rechazar y los que queden en vuelo durante la Reconfiguration del broker. El rechazo de la iteración 2 sigue vigente para la ruta síncrona de cotización.
 
+El identificador lo asigna **quien publica**, no el broker: el Adaptador de anuncios para cada novedad de Booking, el Adaptador de correo para cada mensaje del buzón (el `Message-ID` del correo, o un hash de su contenido si falta) y el Orquestador de viajes para cada pedido de envío. En la rama del correo ese identificador viaja con la reserva por el Parseo aislado ([ADR-IT3-007](ADR-IT3-007.md)) y el Filtro de remitentes ([ADR-IT3-008](ADR-IT3-008.md)) hasta la ingesta, que es la que descarta duplicados.
+
+El alcance tiene un límite que conviene dejar escrito: el productor push no reintenta. El Adaptador de anuncios recibe un aviso que no puede reencolar, así que ante una cola llena responde una indisponibilidad y la reentrega queda a cargo de Booking ([ADR-IT3-002](ADR-IT3-002.md), [ADR-IT3-009](ADR-IT3-009.md)). Retry cubre la entrega **desde** las colas hacia adentro, no la llegada del aviso externo.
+
 ### Consecuencias Positivas (Beneficios)
 * Se cubren los fallos transitorios de proveedores, canales y del broker sin intervención manual.
 * Con identificador e idempotencia, un reintento no duplica reservas ni envíos.
@@ -33,3 +37,5 @@ Opción elegida: **"Opción 1: Retry acotado con identificador único e idempote
 * Hay que guardar los identificadores ya procesados (estado en la ingesta y en notificaciones) y definir cuánto tiempo se conservan.
 * Una caída prolongada de un proveedor puede generar tormentas de reintentos si no se limita su cantidad y su frecuencia.
 * Coexisten dos políticas (sin Retry en la ruta síncrona, con Retry en la asíncrona), que hay que documentar para no mezclarlas.
+* Retry no alcanza al borde de entrada push: un aviso de Booking que llega con la cola llena o con el listener caído depende del reintento del proveedor, no del nuestro.
+* El identificador del correo depende del `Message-ID` del proveedor; si un proveedor lo reescribe, el hash de contenido es el respaldo y puede confundir dos mensajes casi idénticos.

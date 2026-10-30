@@ -31,3 +31,5 @@ Opción elegida: **"Opción 1: Gestor de autorización con consentimiento, permi
 * Los tokens cifrados se guardan en la base, que pasa a contener datos más sensibles.
 * Conservar lo ya incorporado al revocar es una decisión de diseño con impacto en privacidad; queda pendiente definir si el titular puede pedir también su eliminación.
 * Cada proveedor de correo implementa la autorización a su manera, lo que se refleja en el adaptador.
+* Este ADR no fija la frecuencia del sondeo: la fija el paso 5 de la iteración, en 15 minutos por buzón y configurable. Su costo externo crece con la cantidad de buzones autorizados.
+* El Gestor se despliega en los nodos de entrada, junto al Adaptador de correo, para pasarle el token en memoria ([ADR-IT3-010](ADR-IT3-010.md)). Es la única pieza de esos nodos que accede a la base.

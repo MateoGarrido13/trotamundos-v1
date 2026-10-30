@@ -17,7 +17,7 @@ El Orquestador de viajes concentra la cotización con Scatter-Gather, la gestió
 * Opción 2: Split module: separar cotización y gestión de viajes en dos servicios.
 
 ## Resultado de la Decisión
-Opción elegida: **"Opción 1: mantener un único Orquestador de viajes"**, y se rechaza partirlo, porque ningún driver de esta iteración lo exige: la ingesta ya queda como pieza propia ([ADR-IT3-010](ADR-IT3-010.md)) y el polimorfismo cubre `QA-EVO-01` ([ADR-IT3-005](ADR-IT3-005.md)). Partirlo sumaría un servicio y una interfaz, y una llamada de red o una sincronización entre dos mitades que hoy se resuelven en memoria.
+Opción elegida: **"Opción 1: mantener un único Orquestador de viajes"**, y se rechaza partirlo, porque ningún driver de esta iteración mide la separación: `QA-EVO-01` mide el alta de un medio de transporte y `QA-INT-01` el alta de un conector, y ninguno de los dos se vuelve más barato por tener dos servicios en lugar de uno. La carga asíncrona, que es la que podría justificar la división, ya sale del Orquestador por despliegue ([ADR-IT3-010](ADR-IT3-010.md)), y el alta de tipos se resuelve dentro del modelo de reservas ([ADR-IT3-005](ADR-IT3-005.md)). Partirlo sumaría un servicio y una interfaz, y una llamada de red o una sincronización entre dos mitades que hoy se resuelven en memoria.
 
 ### Consecuencias Positivas (Beneficios)
 * Se evita una interfaz y un servicio más, con su despliegue y monitoreo.

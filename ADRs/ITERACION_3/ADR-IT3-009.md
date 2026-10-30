@@ -18,7 +18,9 @@ Las actualizaciones de las APIs de proveedores (Booking) deben reflejarse en la 
 * Opción 3: Híbrido: push más polling de reconciliación.
 
 ## Resultado de la Decisión
-Opción elegida: **"Opción 1: push a un listener"**, porque el aviso llega al momento y sin consultas vacías, y la medida de `QA-PER-01` corre desde que el listener detecta la actualización. El Adaptador de anuncios, que es ese listener, la traduce al modelo interno y la deja en la cola de novedades con identificador único ([ADR-IT3-001](ADR-IT3-001.md)). Usa Ping/Echo contra Booking, ya decidido en la iteración 1.
+Opción elegida: **"Opción 1: push a un listener"**, porque el aviso llega al momento y sin consultas vacías, y la medida de `QA-PER-01` corre desde que el listener detecta la actualización. El Adaptador de anuncios, que es ese listener, la traduce al modelo interno y la deja en la cola de novedades del broker ([ADR-IT3-001](ADR-IT3-001.md)) con el identificador único que él mismo asigna ([ADR-IT3-003](ADR-IT3-003.md)). Usa Ping/Echo contra Booking, ya decidido en la iteración 1.
+
+Como contrapartida del push, el listener no puede reencolar un aviso que ya consumió: si la cola de novedades está llena responde a Booking una indisponibilidad y delega en él la reentrega ([ADR-IT3-002](ADR-IT3-002.md)). El endpoint del listener es una segunda entrada pública del sistema, que no pasa por el API Gateway ([ADR-008](../ITERACION_1/ADR-008.md)): se autentica el origen del aviso y se limita su tasa.
 
 ### Consecuencias Positivas (Beneficios)
 * Mínima latencia de detección y sin tráfico de consulta inútil.

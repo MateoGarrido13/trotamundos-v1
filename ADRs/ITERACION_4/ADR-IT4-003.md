@@ -9,7 +9,7 @@ Con las cuentas particionadas por región ([ADR-IT4-001](ADR-IT4-001.md)) aparec
 
 ## Impulsores de la Decisión (Decision Drivers)
 * `QA-ESC-01`: confirmación en menos de 2 segundos independientemente del continente, y 0 rechazos por timeout.
-* Reutilizar Scatter-Gather ([ADR-IT1-006](../ITERACION_1/ADR-006.md)), Bound execution times ([ADR-IT2-001](../ITERACION_2/ADR-IT2-001.md)) y Graceful degradation ([ADR-IT2-002](../ITERACION_2/ADR-IT2-002.md)) en lugar de sumar componentes.
+* Reutilizar Scatter-Gather ([ADR-006](../ITERACION_1/ADR-006.md)), Bound execution times ([ADR-IT2-001](../ITERACION_2/ADR-IT2-001.md)) y Graceful degradation ([ADR-IT2-002](../ITERACION_2/ADR-IT2-002.md)) en lugar de sumar componentes.
 * `QA-DIS-01`: una región que no responde no puede detener las altas de las demás.
 
 ## Opciones Consideradas

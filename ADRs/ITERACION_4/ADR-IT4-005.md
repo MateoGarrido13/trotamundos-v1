@@ -10,7 +10,7 @@
 ## Impulsores de la Decisión (Decision Drivers)
 * `QA-SEG-01`: denegar las solicitudes malintencionadas, prevenir la saturación y mantener activo el servicio de login para los usuarios legítimos.
 * `QA-ESC-01`: el límite no puede rechazar el pico legítimo de altas del lanzamiento.
-* `CON-01`: el mismo control vale para web y móvil, que entran por el API Gateway ([ADR-IT1-008](../ITERACION_1/ADR-008.md)).
+* `CON-01`: el mismo control vale para web y móvil, que entran por el API Gateway ([ADR-008](../ITERACION_1/ADR-008.md)).
 
 ## Opciones Consideradas
 * Opción 1: Limitación de tasa en el API Gateway, por endpoint y por origen, con un cupo propio para el endpoint de recuperación, y un grupo de recursos separado para la recuperación en el Servicio de autenticación. Al superar el cupo, el Gateway responde "demasiados pedidos" sin pasar el pedido al servicio y deja el evento registrado para el aviso al titular ([ADR-IT4-006](ADR-IT4-006.md)).
@@ -31,5 +31,5 @@ Opción elegida: **"Opción 1: limitación de tasa en el Gateway y aislamiento d
 * Un origen compartido (una red corporativa o la de un aeropuerto) puede dejar a usuarios legítimos del mismo origen sin recuperación.
 * Un ataque distribuido en muchos orígenes hacia muchas cuentas no lo frena este límite solo: depende del límite por cuenta.
 * Las copias del Gateway comparten contadores: se acepta una consistencia aproximada entre ellas.
-* El API Gateway sigue siendo un punto a dimensionar y a hacer redundante ([ADR-IT1-008](../ITERACION_1/ADR-008.md)).
+* El API Gateway sigue siendo un punto a dimensionar y a hacer redundante ([ADR-008](../ITERACION_1/ADR-008.md)).
 * El alta no tiene un tope por total: se limita por origen con un umbral alto, para no rechazar el pico legítimo de `QA-ESC-01`.

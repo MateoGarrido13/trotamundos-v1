@@ -10,7 +10,9 @@ Hoy el Orquestador de viajes agrupa las reservas por viaje (`REF-01`) con un mod
 ## Impulsores de la Decisión (Decision Drivers)
 * `QA-EVO-01`: integrar un medio de transporte que el panel todavía no agrupa en el viaje, en un plazo de 3 meses de esfuerzo de desarrollo.
 * `REF-01`: la agrupación por viaje y el archivado deben seguir funcionando para todos los tipos.
-* El modelo vive dentro del Orquestador, que no se divide ([ADR-IT3-011](ADR-IT3-011.md)).
+* `QA-PER-02`: la agrupación y la cotización se resuelven en memoria dentro del Orquestador, así que el modelo no puede costar una llamada de red por reserva.
+
+El modelo vive dentro del Orquestador de viajes. Que ese componente no se divida es una decisión aparte ([ADR-IT3-011](ADR-IT3-011.md)) y no es lo que justifica el polimorfismo: esta decisión se sostiene sola sobre `QA-EVO-01`.
 
 ## Opciones Consideradas
 * Opción 1: Polymorphism: `Reserva` abstracta y un tipo concreto por medio (`ReservaVuelo`, `ReservaHotel`, `ReservaAuto`, `ReservaTren`, `ReservaAutobus`), con un Registro de tipos cargado por configuración al desplegar (Configuration-time binding).

@@ -20,6 +20,8 @@
 ## Resultado de la Decisión
 Opción elegida: **"Opción 1: cola de Mensajes en revisión con aprobación del titular"**, porque cumple la whitelist sin perder reservas legítimas en silencio. El Filtro de remitentes ubica la whitelist y los mensajes en revisión entre el Parseo aislado y la ingesta; los datos los guarda el Orquestador de viajes. Lo que se descarta es solo el contenido que no pasa la validación del parseo ([ADR-IT3-007](ADR-IT3-007.md)).
 
+Esta decisión **redefine la medida de** `QA-SEG-03*` **y la vuelve condicional**: el 100 % se cumple para los titulares autorizados cuyos remitentes son seguros o fueron aprobados. Una reserva que espera aprobación no está en el itinerario hasta que el titular actúa. El paso 7 de la iteración se lee con esa condición.
+
 ### Consecuencias Positivas (Beneficios)
 * El 100 % de `QA-SEG-03*` se cumple para usuarios cuyos remitentes son seguros o fueron aprobados.
 * El titular ve y decide sobre lo que quedó fuera.
