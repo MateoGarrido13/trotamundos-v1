@@ -15,12 +15,12 @@
 
 ## Opciones Consideradas
 * Opción 1: `IAgencia`, que extiende `IProveedor` con `abrirCaso(caso)` y `consultarCaso(idCaso)`. Un adaptador por agencia, en nodos propios junto a la ingesta ([ADR-IT3-010](../ITERACION_3/ADR-IT3-010.md)). El Orquestador guarda el caso y la agencia preferida del viajero y publica el pedido en una nueva cola de casos de ayuda del Broker. El adaptador lo entrega con Retry e identificador único. Las novedades del caso que informe la agencia entran por la cola de novedades y la ingesta, como cualquier otra novedad.
-* Opción 2: Llamada síncrona del Orquestador a la agencia dentro del pedido del usuario ([ADR-IT4-018](ADR-IT4-018.md)).
+* Opción 2: Llamada síncrona del Orquestador a la agencia dentro del pedido del usuario ([ADR-IT4-014](ADR-IT4-014.md)).
 * Opción 3: Redirigir al usuario al portal de la agencia, sin integración.
 * Opción 4: Modelar la agencia como un `ICanal` de salida.
 
 ## Resultado de la Decisión
-Opción elegida: **"Opción 1: Adaptador de agencia detrás de `IAgencia`, con pedidos asíncronos por el Broker"**, porque reutiliza lo decidido para los proveedores y para la ruta asíncrona: la ACL aísla el contrato de cada agencia, el Broker desacopla al viajero de la disponibilidad de un tercero y el Retry con identificador evita perder o duplicar el pedido. La opción 3 no es una integración y no cumple `REF-05` ni `CON-02`. La opción 4 fuerza a un canal de envío a manejar un ciclo de vida (caso abierto, en curso, resuelto) que `ICanal` no tiene. El Broker pasa de tres a cinco colas con esta decisión y la de [ADR-IT4-011](ADR-IT4-011.md): esto amplía [ADR-IT3-001](../ITERACION_3/ADR-IT3-001.md) y cada cola nueva queda acotada y con Retry ([ADR-IT3-002](../ITERACION_3/ADR-IT3-002.md), [ADR-IT3-003](../ITERACION_3/ADR-IT3-003.md)).
+Opción elegida: **"Opción 1: Adaptador de agencia detrás de `IAgencia`, con pedidos asíncronos por el Broker"**, porque reutiliza lo decidido para los proveedores y para la ruta asíncrona: la ACL aísla el contrato de cada agencia, el Broker desacopla al viajero de la disponibilidad de un tercero y el Retry con identificador evita perder o duplicar el pedido. La opción 3 no es una integración y no cumple `REF-05` ni `CON-02`. La opción 4 fuerza a un canal de envío a manejar un ciclo de vida (caso abierto, en curso, resuelto) que `ICanal` no tiene. El Broker pasa de tres a cuatro colas con esta decisión (y sumará la quinta en [ADR-IT5-001](../ITERACION_5/ADR-IT5-001.md)): esto amplía [ADR-IT3-001](../ITERACION_3/ADR-IT3-001.md) y cada cola nueva queda acotada y con Retry ([ADR-IT3-002](../ITERACION_3/ADR-IT3-002.md), [ADR-IT3-003](../ITERACION_3/ADR-IT3-003.md)).
 
 ### Consecuencias Positivas (Beneficios)
 * Una agencia nueva es un adaptador más, en un único módulo, sin tocar al Orquestador.

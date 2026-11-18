@@ -1,0 +1,40 @@
+# Plan Maestro del Prototipo — Trotamundos
+
+Este documento registra las decisiones confirmadas de alcance, las 6 iteraciones del diseño, los 5 incrementos verticales (*Vertical Slices*) y el stack tecnológico para construir el prototipo arquitectónico de **Trotamundos** bajo enfoque *Spec-Driven Development*.
+
+---
+
+## 1. Decisiones Confirmadas de Alcance y Diseño
+
+1. **Iteraciones del proceso ADD (6 iteraciones completas):**
+   - **Iteraciones 1 a 4:** topología N-Tier del Core, cotas de tiempo y degradación, Broker e ingesta asíncrona, identidad particionada por región, seguridad de login/itinerarios, gestión manual y agencia preferida ([ITERACION_1.md](../ITERACION_1.md) a [ITERACION_4.md](../ITERACION_4.md)).
+   - **Iteración 5:** cierre de los drivers de analítica desacoplada (`QA-PER-04*`, `REF-06`) y experiencia móvil con capacidad nativa GPS (`QA-USA-01`) ([ITERACION_5.md](../ITERACION_5.md)).
+   - **Iteración 6:** incorporación del requerimiento funcional avanzado obligatorio de la segunda entrega: **Opción B — Asistente Virtual / Chatbot (`REF-07`)** ([ITERACION_6.md](../ITERACION_6.md)).
+2. **Organización de artefactos SDD:** carpetas `specs/` y `planes/` separadas en la raíz del repositorio, regidas por [POLITICAS_SPECS_Y_PLANES.md](../POLITICAS_SPECS_Y_PLANES.md) y asistidas por `.cursor/skills/skill-specs` y `.cursor/skills/skill-plan`.
+3. **Proveedores y terceros (`CON-02`):** se implementan como **mocks locales configurables** detrás de sus respectivos adaptadores (`IProveedor`, `ICotizadorHotel`, `IProveedorInventario`, `IProveedorArrendadora`, `ICanal`, `IAgencia`, `IMotorConversacional`, API de correo). Cada mock permite inyectar demoras artificiales o fallos para demostrar en vivo los timeouts, la degradación elegante, el failover y los reintentos.
+
+---
+
+## 2. Stack Tecnológico Confirmado
+
+| Capa / Pieza | Tecnología confirmada | Cómo instancia la arquitectura y por qué se eligió |
+| :--- | :--- | :--- |
+| **Lenguaje y Backend** | **Python 3.11+ con FastAPI** | Sintaxis concisa, tipado estático (`Pydantic` / `Protocol` / `ABC`) ideal para expresar explícitamente los contratos (`IProveedor`, `ICanal`, `IAgencia`, `IMotorConversacional`, `IRegistroUsuario`, clase abstracta `Reserva`) y concurrencia `asyncio` para el *Scatter-Gather* y las cotas de tiempo (*Bound execution times*). |
+| **Bases de Datos (Tier 3)** | **PostgreSQL en Docker (`docker-compose.yml`)** | Instancia las **9 bases separadas** de la arquitectura (`cuentas_amer_primaria`, `cuentas_amer_pasiva`, `cuentas_emea_primaria`, `cuentas_emea_pasiva`, `cuentas_apac_primaria`, `cuentas_apac_pasiva`, `viajes_primaria`, `viajes_pasiva` y `analitica`), garantizando aislamiento físico real, transacciones con commit en dos fases (2PC), promoción de la pasiva (`QA-DIS-01`) y bloqueo atómico por fila para la ráfaga de 50 solicitudes simultáneas (`QA-SEG-01`). |
+| **Suite de Pruebas** | **`pytest` + `httpx`** | Permite ejecutar un test por cada Criterio de Aceptación (`AC-*`), incluyendo pruebas concurrentes, timeouts y failover. |
+| **Broker de Mensajes** | **Broker en proceso con 5 colas acotadas (`maxsize`), Retry con backoff, idempotencia y DLQ** | Instancia exactamente el Broker de `ADR-IT3-001`, `ADR-IT3-002`, `ADR-IT3-003`, `ADR-IT4-010` y `ADR-IT5-001` (colas: *novedades*, *correo*, *notificaciones*, *casos de ayuda*, *eventos analíticos*), permitiendo simular nodo principal/respaldo y colas llenas en los tests. |
+| **Clientes (`CON-01`, `QA-USA-01`, `REF-07`)** | **2 Clientes Web y Móvil en HTML5 + CSS + JS vanilla** | **Cliente Web:** cotización, vista principal agrupada por viaje, gestión manual, novedades, revisión de whitelist y panel del Asistente Virtual (Chatbot).<br>**Cliente Móvil:** vista optimizada de carga rápida (< 1,4 s desde caché de borde, `QA-PER-03`), uso de la capacidad nativa `navigator.geolocation` (GPS) sobre `Reserva.lugar` (`QA-USA-01`) y acceso al Asistente Virtual (`REF-07`). |
+
+---
+
+## 3. Los 5 Incrementos Verticales (Vertical Slices) del Prototipo
+
+El desarrollo de specs, planes y código se organiza en **5 incrementos verticales**. Cada uno atraviesa los tiers necesarios y deja verificados en verde sus escenarios de calidad y requerimientos funcionales.
+
+| Slice | Nombre del incremento | Secuencias del Paso 5 que demuestra | Drivers verificados | Specs asociadas |
+| :--- | :--- | :--- | :--- | :--- |
+| **Slice 1** | **Identidad Regional y Seguridad en el Borde** | • Alta en la región con unicidad acotada (`QA-ESC-01`, Iteración 4)<br>• Emisión y validación local de token firmado en el API Gateway (`QA-ESC-01`, `QA-PER-02`)<br>• Contención de ráfaga de 50 solicitudes simultáneas de recuperación (`QA-SEG-01`) | `QA-ESC-01`, `QA-SEG-01`, `CON-01` | `SPEC-AUT-01` (Módulo registro y auth regional + Bases de cuentas PostgreSQL)<br>`SPEC-GW-01` (API Gateway: firma JWT, enrutamiento regional y rate limit) |
+| **Slice 2** | **Cotización Resiliente y Alta Disponibilidad** | • Apertura del móvil desde Caché de borde en < 1,4 s (`QA-PER-03`, Iteración 2)<br>• Cotización web con Caché de borde (800 ms), Scatter-Gather a 3 adaptadores, Ping/Echo y degradación elegante (`QA-PER-02`, `QA-INT-01`)<br>• Caída de nodo de cotización y failover de Base de viajes primaria a pasiva con 2PC (`QA-DIS-01`) | `QA-PER-02`, `QA-PER-03`, `QA-DIS-01`, `QA-INT-01`, `CON-02` | `SPEC-GW-02` (Caché de borde CDN y Balanceador con Ping/Echo)<br>`SPEC-COT-01` (Orquestador — cotización Scatter-Gather)<br>`SPEC-COT-02` (`IProveedor` y Adaptadores de aerolíneas, hoteles y arrendadoras)<br>`SPEC-RES-01` (Base de viajes primaria/pasiva PostgreSQL con 2PC y Reconfiguration) |
+| **Slice 3** | **Subsistema Asíncrono: Broker, Ingesta, Correo y Canales** | • Novedad push de Booking → cola de novedades → Servicio de ingesta idempotente → sección "Novedades" (< 5 min) (`QA-PER-01`, Iteración 3)<br>• Autorización OAuth cifrada, sondeo de correo, parseo aislado y filtro whitelist / revisión (`REF-02`, `REF-03`, `QA-SEG-03*`)<br>• Envío de propuestas y avisos por `ICanal` sumando Instagram (`QA-INT-02`) | `QA-PER-01`, `REF-02`, `REF-03`, `QA-SEG-03*`, `QA-INT-02`, `CON-02` | `SPEC-ING-01` (Broker de 5 colas acotadas con Retry y DLQ)<br>`SPEC-ING-02` (Adaptador Booking y Servicio de ingesta)<br>`SPEC-ING-03` (Gestor autorización correo, Adaptador correo, Parseo aislado y Whitelist)<br>`SPEC-NOT-01` (Servicio de notificaciones, `ICanal` y Adaptador Instagram) |
+| **Slice 4** | **Ciclo de Vida del Viaje, Permisos y Experiencia Móvil con GPS** | • Agrupación polimórfica de `Reserva` por viaje, archivado automático y alta de nuevo medio de transporte por configuración (`REF-01`, `QA-EVO-01`, Iteraciones 3 y 4)<br>• Gestión manual idempotente con `origen`, `lugar` y baja lógica (`REF-04`)<br>• Autorización por rol en itinerario compartido (`401`) y auditoría transaccional (`QA-SEG-02`)<br>• Consulta en Cliente móvil con GPS sobre `Reserva.lugar` (`QA-USA-01`, Iteración 5) | `REF-01`, `REF-04`, `QA-EVO-01`, `QA-SEG-02`, `QA-USA-01`, `CON-01` | `SPEC-RES-02` (Modelo polimórfico `Reserva`, Registro de tipos y ciclo de vida del viaje)<br>`SPEC-RES-03` (Operaciones manuales idempotentes y Módulo de control de acceso y auditoría)<br>`SPEC-CLI-01` (Cliente web y Cliente móvil con geolocalización diferida) |
+| **Slice 5** | **Asistente Virtual (Chatbot), Agencia Preferida y Analítica** | • Chatbot de 1er nivel con `IMotorConversacional` (cota y degradación a menú) para consultas/reprogramaciones simples y derivación de casos complejos a la agencia preferida (`REF-07`, Iteración 6)<br>• Apertura asíncrona de caso por cola hacia `IAgencia` y retorno de novedades (`REF-05`, Iteración 4)<br>• Publicación en 5ta cola analítica, Proyector analítico y consulta de tendencias, destinos y cancelaciones en < 10 s sobre Base analítica PostgreSQL (`REF-06`, `QA-PER-04*`, Iteración 5) | `REF-05`, `REF-06`, `REF-07`, `QA-PER-04*`, `CON-02` | `SPEC-AGE-01` (Módulo Asistente Virtual, `IMotorConversacional`, `IAgencia` y Adaptador de agencia)<br>`SPEC-ANA-01` (Proyector analítico, Base analítica PostgreSQL y Servicio de consultas analíticas) |

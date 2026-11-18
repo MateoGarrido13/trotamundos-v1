@@ -17,7 +17,7 @@
 * Opción 1: Partición geográfica. Una región por continente de origen. Cada región tiene su Módulo de registro y autenticación y su Base de cuentas (primaria y pasiva, con commit en dos fases dentro de la región). La cuenta vive en la región donde se registra.
 * Opción 2: Mantener un único par de bases y servir todas las altas desde un solo sitio (situación de la iteración 1).
 * Opción 3: Un único punto de escritura central, con réplicas de lectura en cada continente.
-* Opción 4: Una base distribuida entre regiones, con confirmación síncrona en todas ellas ([ADR-IT4-015](ADR-IT4-015.md)).
+* Opción 4: Una base distribuida entre regiones, con confirmación síncrona en todas ellas ([ADR-IT4-012](ADR-IT4-012.md)).
 
 ## Resultado de la Decisión
 Opción elegida: **"Opción 1: partición geográfica de las cuentas por región de origen"**, porque saca del camino crítico del alta todo cruce síncrono entre continentes. El viajero escribe en su región, el commit en dos fases sigue siendo el de la iteración 2 pero entre dos nodos de la misma región, y la carga de altas se reparte entre tres pares de bases en lugar de caer en uno. Las opciones 2 y 3 dejan a los viajeros de otros continentes pagando el viaje de ida y vuelta en la confirmación, y la 3 mantiene un único punto de escritura. El identificador de cuenta se genera en la región, con el código de región como prefijo, sin coordinación entre regiones. Ese identificador viaja en el token de sesión ([ADR-IT4-004](ADR-IT4-004.md)) para que el resto del sistema sepa dónde vive la cuenta.

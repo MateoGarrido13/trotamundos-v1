@@ -1,6 +1,6 @@
 # Listado de drivers
 
-Registro los escenarios con un rótulo estable para citarlos después en las iteraciones y en los ADR. El esquema es `QA-<atributo>-<nn>`: PER rendimiento, DIS disponibilidad, ESC escalabilidad, INT interoperabilidad, SEG seguridad, EVO modificabilidad, USA usabilidad. El número tiene dos dígitos y corre dentro de cada atributo. Los requerimientos funcionales son `REF-01` a `REF-06`. Las restricciones son `CON-01` y `CON-02`.
+Registro los escenarios con un rótulo estable para citarlos después en las iteraciones y en los ADR. El esquema es `QA-<atributo>-<nn>`: PER rendimiento, DIS disponibilidad, ESC escalabilidad, INT interoperabilidad, SEG seguridad, EVO modificabilidad, USA usabilidad. Los números tienen dos dígitos y corren dentro de cada atributo. Los requerimientos funcionales son `REF-01` a `REF-07`. Las restricciones son `CON-01` y `CON-02`.
 
 El texto de cada campo es el que levantamos. En este paso lo ordeno en la plantilla, con las mismas etiquetas y el mismo orden de campos.
 
@@ -27,6 +27,7 @@ El texto de cada campo es el que levantamos. En este paso lo ordeno en la planti
 | `REF-04` | Requerimiento funcional | El cliente agrega, actualiza o elimina una reserva a mano en el panel. |
 | `REF-05` | Requerimiento funcional | Integración con la agencia de viajes preferida para resolver un problema. |
 | `REF-06` | Requerimiento funcional | Consultas analíticas de tendencias, destinos y cancelaciones para el equipo de datos. |
+| `REF-07` | Requerimiento funcional | El viajero realiza consultas de estado, reprogramaciones o reporta problemas a través del asistente virtual integrado. |
 | `CON-01` | Restricción | Las dos versiones son necesarias: web y móvil. |
 | `CON-02` | Restricción | La integración con aerolíneas, hoteles, arrendadoras y correo es por APIs. |
 
@@ -237,6 +238,10 @@ El sistema debe integrarse con la agencia de viajes preferida del usuario para f
 **Rótulo:** `REF-06` — Analítica de datos
 
 Trotamundos recopilará datos analíticos de los viajes (tendencias, destinos, cancelaciones) para su monetización por parte del equipo de datos, implicando la ejecución de consultas analíticas pesadas.
+
+**Rótulo:** `REF-07` — Asistente virtual (Chatbot)
+
+Implementar un bot conversacional integrado que actúe como primer nivel de soporte interactivo para gestionar reprogramaciones, consultas de estado y problemas menores, delegando a la agencia de viajes preferida del usuario únicamente aquellos casos complejos.
 
 ## Restricciones
 

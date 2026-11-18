@@ -4,7 +4,7 @@
 | Campo                       | Valor                                                                                                                                                                                                                                                                                                  |
 | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Ronda**                   | 1                                                                                                                                                                                                                                                                                                      |
-| **Arranque**                | Refinamiento. Se retoma el Core de la iteración 1, la caché y la consistencia de la iteración 2, y el modelo de reservas y la ingesta de la iteración 3. No hay iteración 5: esta ronda cierra acá.                                                                                                 |
+| **Arranque**                | Refinamiento. Se retoma el Core de la iteración 1, la caché y la consistencia de la iteración 2, y el modelo de reservas y la ingesta de la iteración 3. Es la última iteración de la primera entrega: los bloques B y D que queden parciales pasan a la [Iteración 5](ITERACION_5.md).                                                                                                 |
 | **Qué toma esta iteración** | Cuatro bloques que quedaron abiertos: (A) el escalado del alta de usuarios y la seguridad del login y del acceso compartido; (B) las consultas analíticas del equipo de datos; (C) la gestión manual de reservas y la integración con la agencia de viajes preferida; (D) las capacidades nativas del móvil. |
 
 
@@ -27,7 +27,7 @@ El paso 1 de la ronda está en [README.md](README.md). El cierre de la iteració
 
 **Drivers ya resueltos:** `REF-01`, `CON-01`, `CON-02` (iteración 1); `QA-PER-02`, `QA-PER-03`, `QA-DIS-01` (iteración 2); `QA-PER-01`, `QA-INT-01`, `QA-INT-02`, `QA-EVO-01`, `QA-SEG-03*`, `REF-02`, `REF-03` (iteración 3).
 
-**Goal.** Esta es la última iteración de la ronda: cierra los ocho drivers que quedaron abiertos, agrupados en cuatro bloques porque no comparten una sola problemática.
+**Goal.** Esta es la última iteración de la primera entrega: toma los ocho drivers que quedaron abiertos, agrupados en cuatro bloques porque no comparten una sola problemática.
 
 El **bloque A** es la identidad del usuario: cómo se crea, cómo se autentica y qué puede ver. El alta masiva escala para que 100.000 registros diarios, repartidos en 3 continentes, confirmen en menos de 2 segundos sin degradar a los usuarios existentes (`QA-ESC-01`). El login resiste una ráfaga de 50 solicitudes simultáneas de recuperación de contraseña contra un mismo endpoint, rechazando el abuso y manteniendo el servicio activo para el resto (`QA-SEG-01`). Y el acceso a un itinerario compartido se valida por permiso: quien no lo tiene recibe un 401 al intentar registrar una actividad (`QA-SEG-02`).
 
@@ -305,11 +305,159 @@ El Cliente móvil lee la geolocalización del dispositivo, con permiso del usuar
 
 ## Paso 6. Bosquejar y registrar la decisión
 
-_Vistas y diagramas: pendientes._
+### Componentes y conectores — Identidad particionada, control de acceso y agencia preferida
+
+Estructura:
+
+```mermaid
+flowchart TB
+    subgraph Clientes["Clientes (Tier 1)"]
+        CW["Cliente web"]
+        CM["Cliente móvil (GPS)"]
+    end
+
+    subgraph Sistema["Trotamundos — Iteración 4"]
+        GW["API Gateway (Firma JWT + Rate limit)"]
+        LB["Balanceador de Carga"]
+
+        subgraph Regiones["Identidad particionada (×3 regiones: AMER, EMEA, APAC)"]
+            MRA["Módulo de registro y autenticación (IRegistroUsuario + Flujo recuperación)"]
+            BCP[("Base de cuentas primaria")]
+            BCS[("Base de cuentas pasiva")]
+        end
+
+        subgraph Core["Core de viajes"]
+            ORQ["Orquestador de viajes (Gestión manual + Reserva.lugar)"]
+            MCA["Módulo de control de acceso y auditoría"]
+            BVP[("Base de viajes primaria")]
+            BVS[("Base de viajes pasiva")]
+        end
+
+        subgraph Asincrono["Subsistema asíncrono"]
+            BRK[["Broker (4 colas acotadas)"]]
+            ING["Servicio de ingesta"]
+            NOT["Servicio de notificaciones"]
+            AAG["Adaptador de agencia (IAgencia)"]
+        end
+    end
+
+    AG["API de la agencia preferida"]
+    CAN["Canales externos (Email / WhatsApp / Instagram)"]
+
+    CW -->|"HTTPS REST (síncrono)"| GW
+    CM -->|"HTTPS REST (síncrono)"| GW
+    GW -->|"HTTP (alta, login, renovación, recuperación - síncrono)"| MRA
+    MRA <-->|"HTTP acotado (unicidad por huella entre regiones)"| MRA
+    MRA -->|"JDBC (síncrono)"| BCP
+    BCP <-->|"TCP 2PC (síncrono)"| BCS
+    MRA -.->|"Cola de notificaciones (asíncrono)"| BRK
+
+    GW -->|"HTTP con identidad verificada (síncrono)"| LB
+    LB -->|"HTTP (síncrono)"| ORQ
+    ORQ -->|"En memoria: verificarPermiso (síncrono)"| MCA
+    ORQ -->|"JDBC: reserva + auditoría atómica (síncrono)"| BVP
+    MCA -->|"JDBC: membresía + auditoría (síncrono)"| BVP
+    BVP <-->|"TCP 2PC (síncrono)"| BVS
+
+    ORQ -.->|"Cola de casos de ayuda (asíncrono)"| BRK
+    BRK -.->|"Cola de casos de ayuda (asíncrono)"| AAG
+    AAG -->|"HTTPS REST: abrirCaso / consultarCaso (síncrono con Retry)"| AG
+    AAG -.->|"Cola de novedades (asíncrono)"| BRK
+    BRK -.->|"Cola de novedades (asíncrono)"| ING
+    ING -->|"HTTP con límite de tasa (síncrono)"| ORQ
+    BRK -.->|"Cola de notificaciones (asíncrono)"| NOT
+    NOT -->|"HTTPS REST por ICanal"| CAN
+
+    subgraph Leyenda["Leyenda"]
+        L1["Recuadro: Componente de ejecución"]
+        L2[("Cilindro: Base de datos")]
+        L3[["Doble borde: Broker de colas acotadas"]]
+        L4["Flecha continua: Conector síncrono"]
+        L5["Flecha punteada: Conector asíncrono por cola"]
+    end
+```
+
+Leyenda:
+
+- Recuadro: Componente de ejecución.
+- Cilindro: Base de datos (cada primaria sincroniza con su pasiva por TCP 2PC).
+- Doble borde: Broker de colas acotadas.
+- Flecha continua: Conector síncrono.
+- Flecha punteada: Conector asíncrono por cola.
+- Frontera: El subgrafo `Trotamundos — Iteración 4` encierra el sistema; los clientes, la API de la agencia preferida y los canales externos quedan afuera.
+
+### Secuencia — Alta en la región con unicidad acotada (`QA-ESC-01`) y pedido posterior con token (`QA-PER-02`)
+
+Estructura:
+
+```mermaid
+sequenceDiagram
+    participant C as Cliente (web / móvil)
+    participant GW as API Gateway
+    participant MRA1 as Módulo registro y auth (Región origen)
+    participant MRA2 as Módulos registro y auth (Otras 2 regiones)
+    participant BCP as Base de cuentas primaria
+    participant BCS as Base de cuentas pasiva
+    participant LB as Balanceador de Carga
+    participant ORQ as Orquestador de viajes
+
+    Note over C: Leyenda: línea continua = llamada síncrona; línea punteada = retorno o reconciliación asíncrona. Todos los participantes son internos salvo Cliente.
+    C->>GW: 1. POST alta (correo, credencial, país) [HTTPS REST]
+    GW->>MRA1: 2. Encamina alta a región de origen [HTTP]
+    par Scatter-Gather acotado por huella
+        MRA1->>MRA2: 3a. Consultar unicidad (huella del correo, con cota)
+        MRA2-->>MRA1: 3b. Libre / Silencio (si vence la cota, marca "unicidad pendiente")
+    end
+    MRA1->>BCP: 4. Escribir cuenta (prefijo región), perfil y credencial [JDBC]
+    BCP->>BCS: 5a. Commit en dos fases (2PC) [TCP]
+    BCS-->>BCP: 5b. Acuerdo 2PC
+    BCP-->>MRA1: 6. Confirmación transaccional
+    MRA1-->>GW: 7. Confirmación de cuenta + token de acceso firmado y token de renovación (< 2 s)
+    GW-->>C: 8. Cuenta activa con sesión iniciada inmediatamente
+
+    C->>GW: 9. Pedido posterior con token de acceso firmado [HTTPS REST]
+    Note over GW: 10. Valida firma localmente con clave pública regional (0 llamadas a regiones)
+    GW->>LB: 11. Encamina pedido con identidad y región verificadas [HTTP]
+    LB->>ORQ: 12. Ejecuta operación en el Core [HTTP]
+    ORQ-->>C: 13. Respuesta dentro de la cota
+```
+
+### Secuencia — Contención de ráfaga de recuperación (`QA-SEG-01`) y autorización de actividad (`QA-SEG-02`, `REF-04`)
+
+Estructura:
+
+```mermaid
+sequenceDiagram
+    participant A as Atacante / Cliente
+    participant GW as API Gateway (Rate limit)
+    participant MRA as Módulo registro y auth (Grupo recursos recuperación)
+    participant BCP as Base de cuentas primaria
+    participant BRK as Broker (Cola notificaciones)
+    participant ORQ as Orquestador de viajes
+    participant MCA as Módulo control de acceso y auditoría
+    participant BVP as Base de viajes primaria
+
+    Note over A: Leyenda: línea continua = llamada síncrona; línea punteada = retorno o publicación asíncrona. Atacante / Cliente es externo.
+    A->>GW: 1. Ráfaga de 50 solicitudes simultáneas de recuperación [HTTPS REST]
+    GW-->>A: 2a. Exceso de cupo por endpoint/origen -> "demasiados pedidos" (sin tocar MRA)
+    GW->>MRA: 2b. Solicitudes dentro del cupo (recursos aislados del login) [HTTP]
+    MRA->>BCP: 3. Actualización atómica (1 solo pedido vigente por cuenta + hash token 1 uso) [JDBC]
+    BCP-->>MRA: 4. Solo 1 solicitud gana la condición atómica; las demás no generan token
+    MRA--)BRK: 5. Publica 1 correo de recuperación + 1 aviso de actividad sospechosa por ventana
+    MRA-->>GW: 6. Respuesta uniforme (exista o no la cuenta)
+    GW-->>A: 7. Respuesta uniforme
+
+    A->>GW: 8. Participante intenta registrar ReservaActividad (con clave de operación) [HTTPS REST]
+    GW->>ORQ: 9. Identidad verificada por firma [HTTP]
+    ORQ->>MCA: 10. verificarPermiso(cuenta, itinerario, REGISTRAR) [En memoria]
+    MCA->>BVP: 11. Lee membresía y escribe ReservaActividad + asiento de auditoría en la misma transacción [JDBC 2PC]
+    BVP-->>ORQ: 12. Confirmación (si tiene permiso) o sólo asiento de denegación (si no tiene permiso -> Error 401)
+    ORQ-->>A: 13. Actividad registrada o redirección a "Error 401"
+```
 
 ### Catálogo
 
-Decisiones de diseño registradas en [ADRs/ITERACION_4](ADRs/ITERACION_4/).
+Decisiones de diseño registradas en [ADRs/ITERACION_4](ADRs/ITERACION_4/), justificadas en [Justificación_ADRs_iteración_4.md](ADRs/ITERACION_4/Justificación_ADRs_iteración_4.md).
 
 | ID | Decisión | Estado |
 | --- | --- | --- |
@@ -323,8 +471,10 @@ Decisiones de diseño registradas en [ADRs/ITERACION_4](ADRs/ITERACION_4/).
 | ADR-IT4-008 | [Gestión manual de reservas en el Orquestador, idempotente, con origen y baja lógica](ADRs/ITERACION_4/ADR-IT4-008.md) | aceptado |
 | ADR-IT4-009 | [Extensión del contrato `Reserva` con el lugar de la reserva](ADRs/ITERACION_4/ADR-IT4-009.md) | aceptado |
 | ADR-IT4-010 | [Adaptador de agencia detrás de `IAgencia`, con pedidos de ayuda asíncronos](ADRs/ITERACION_4/ADR-IT4-010.md) | aceptado |
-
-**Pendientes.** Los ADRs ya registrados hacen referencia a decisiones que todavía no están escritas: la quinta cola del Broker (`ADR-IT4-011`, citada en [ADR-IT4-010](ADRs/ITERACION_4/ADR-IT4-010.md)), el efecto de quitar a un miembro de un itinerario (`ADR-IT4-014`, citada en [ADR-IT4-007](ADRs/ITERACION_4/ADR-IT4-007.md)), y los dos rechazos ya argumentados dentro de otras decisiones: la base distribuida con confirmación síncrona entre regiones (`ADR-IT4-015`, citada en [ADR-IT4-001](ADRs/ITERACION_4/ADR-IT4-001.md)) y la llamada síncrona a la agencia (`ADR-IT4-018`, citada en [ADR-IT4-010](ADRs/ITERACION_4/ADR-IT4-010.md)). Faltan además las decisiones de los bloques B y D, y el rechazo del bloqueo de cuenta por intentos fallidos, comparado en el paso 4.
+| ADR-IT4-011 | [Revocación de membresía en un itinerario efectiva desde la operación siguiente](ADRs/ITERACION_4/ADR-IT4-011.md) | aceptado |
+| ADR-IT4-012 | [Base de cuentas distribuida entre regiones con confirmación síncrona](ADRs/ITERACION_4/ADR-IT4-012.md) | rechazado |
+| ADR-IT4-013 | [Bloqueo de cuenta tras N intentos de recuperación o inicio de sesión](ADRs/ITERACION_4/ADR-IT4-013.md) | rechazado |
+| ADR-IT4-014 | [Llamada síncrona del Orquestador a la agencia preferida dentro del pedido del usuario](ADRs/ITERACION_4/ADR-IT4-014.md) | rechazado |
 
 ## Paso 7. Analizar y revisar el purpose
 
@@ -404,7 +554,7 @@ Quedan abiertos y están registrados en los ADR. No cambian el estado de los dri
 | `ICanal.enviar` pasa a transportar también avisos del sistema: el parámetro se entiende como mensaje y no solo como propuesta.                               | [ADR-IT4-006](ADRs/ITERACION_4/ADR-IT4-006.md)                                                                                                     | Es una ampliación semántica de un contrato de la iteración 3, sin cambio de firma ni impacto en los canales existentes.                                                           |
 | La retención de la auditoría y de las claves de operación, y la eliminación definitiva de lo dado de baja lógicamente, por privacidad.                      | [ADR-IT4-007](ADRs/ITERACION_4/ADR-IT4-007.md), [ADR-IT4-008](ADRs/ITERACION_4/ADR-IT4-008.md)                                                     | Son políticas de dato, no decisiones de estructura, y no afectan la medida de ningún escenario de la ronda.                                                                      |
 | El escenario nombra una página "Error 401" donde HTTP usaría 403 para la falta de permiso.                                                                  | [ADR-IT4-007](ADRs/ITERACION_4/ADR-IT4-007.md)                                                                                                     | Se respeta el texto del escenario; el código que viaja por la red se fija en el diseño detallado.                                                                                |
-| Quitar a un miembro de un itinerario vale desde la operación siguiente, no sobre lo que ya tiene en pantalla.                                               | [ADR-IT4-007](ADRs/ITERACION_4/ADR-IT4-007.md), y el `ADR-IT4-014` que cita y todavía no está escrito                                              | La medida de `QA-SEG-02` es por solicitud, y toda solicitud posterior se autoriza de nuevo con denegación por defecto.                                                            |
+| Quitar a un miembro de un itinerario vale desde la operación siguiente, no sobre lo que ya tiene en pantalla.                                               | [ADR-IT4-007](ADRs/ITERACION_4/ADR-IT4-007.md), [ADR-IT4-011](ADRs/ITERACION_4/ADR-IT4-011.md)                                                     | La medida de `QA-SEG-02` es por solicitud, y toda solicitud posterior se autoriza de nuevo con denegación por defecto.                                                            |
 | Las coordenadas pueden faltar en una reserva, y obtenerlas por geocodificación no se decide en esta iteración.                                               | [ADR-IT4-009](ADRs/ITERACION_4/ADR-IT4-009.md)                                                                                                     | Los consumidores tienen que tolerarlo por contrato: la vista móvil se muestra sin distancia ni ruta.                                                                             |
 | Cuál es el estado del caso de agencia cuando se agotan los reintentos. La regla de partida es dejarlo "sin entregar", visible y reintentable.                | [ADR-IT4-010](ADRs/ITERACION_4/ADR-IT4-010.md)                                                                                                     | `REF-05` es un requerimiento funcional sin medida de tiempo, y el pedido no se pierde en silencio.                                                                               |
 | El Broker concentra ahora más colas, con más para dimensionar y monitorear.                                                                                 | [ADR-IT4-010](ADRs/ITERACION_4/ADR-IT4-010.md), sobre [ADR-IT3-001](ADRs/ITERACION_3/ADR-IT3-001.md) y [ADR-IT3-002](ADRs/ITERACION_3/ADR-IT3-002.md) | Cada cola nueva queda acotada y con Retry, como las tres de la iteración 3, y el Broker ya es redundante.                                                                        |
@@ -415,17 +565,17 @@ Quedan abiertos y están registrados en los ADR. No cambian el estado de los dri
 
 | Pregunta                    | Respuesta                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| ¿Se cumplió el goal?        | Parcialmente. Cinco de los ocho drivers del goal cierran `Completely`: los tres del bloque A (`QA-ESC-01`, `QA-SEG-01`, `QA-SEG-02`) y los dos del bloque C (`REF-04`, `REF-05`). Los bloques B (`QA-PER-04*`, `REF-06`) y D (`QA-USA-01`) quedan `Partially`: el refinamiento del contrato `Reserva` les dio el dato que les faltaba, pero sus decisiones propias —el camino de lectura analítico y la conducta del cliente— no están registradas.                                                                                                                                                                                            |
+| ¿Se cumplió el goal?        | Parcialmente. Cinco de los ocho drivers del goal cierran `Completely`: los tres del bloque A (`QA-ESC-01`, `QA-SEG-01`, `QA-SEG-02`) y los dos del bloque C (`REF-04`, `REF-05`). Los bloques B (`QA-PER-04*`, `REF-06`) y D (`QA-USA-01`) quedan `Partially`: el refinamiento del contrato `Reserva` con `lugar` ([ADR-IT4-009](ADRs/ITERACION_4/ADR-IT4-009.md)) y la baja lógica ([ADR-IT4-008](ADRs/ITERACION_4/ADR-IT4-008.md)) les dieron los datos que necesitaban, y sus decisiones propias pasan como entrada a la [Iteración 5](ITERACION_5.md). |
 | Purpose de la ronda         | Arquitectura greenfield del panel de viajes en web y móvil, guiada por los escenarios de [LISTADO_DRIVERS.md](LISTADO_DRIVERS.md) ([README.md](README.md), paso 1).                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| ¿Hace falta otra iteración? | No. Hace falta **terminar esta**. Los tres drivers abiertos no esperan un refinamiento nuevo sobre lo ya decidido: esperan los ADR que faltan dentro de esta misma iteración. Abrir una iteración 5 para eso sería renombrar el pendiente, no resolverlo.                                                                                                                                                                                                                                                                                                                                                                                       |
-| Qué falta para cerrar la ronda | 1) El camino de lectura analítico, aislado de la Base de viajes, con el que se cumplen los 10 s (`QA-PER-04*`, `REF-06`). 2) La conducta del Cliente móvil sobre el `lugar` y la posición del dispositivo (`QA-USA-01`). 3) Los cuatro ADR que las decisiones ya registradas citan por adelantado: la quinta cola del Broker (`ADR-IT4-011`), el efecto de quitar a un miembro (`ADR-IT4-014`), y los rechazos de la base distribuida con confirmación síncrona (`ADR-IT4-015`) y de la llamada síncrona a la agencia (`ADR-IT4-018`). 4) El rechazo del bloqueo de cuenta por intentos fallidos, ya comparado en el paso 4 y sin ADR propio. 5) Las vistas del paso 6 y el `Justificación_ADRs_iteración_4.md`, que las tres iteraciones anteriores tienen. |
+| ¿Hace falta otra iteración? | Sí: la **[Iteración 5](ITERACION_5.md)** cierra los bloques B (`QA-PER-04*`, `REF-06` — camino de lectura analítico aislado de la Base de viajes) y D (`QA-USA-01` — conducta del Cliente móvil con GPS sobre `Reserva.lugar`), y la **[Iteración 6](ITERACION_6.md)** incorpora el requerimiento funcional avanzado de la segunda entrega (`REF-07` — Asistente virtual / Chatbot). |
+| Qué pasa a la Iteración 5   | 1) El camino de lectura analítico y la quinta cola del Broker para procesar informes de tendencias, destinos y cancelaciones en menos de 10 s sin competir con la Base de viajes (`QA-PER-04*`, `REF-06`). 2) La conducta del Cliente móvil sobre el `lugar` de `Reserva` y la posición GPS del dispositivo (`QA-USA-01`). |
 
 
-### Estado de los veintiún drivers al cierre de esta iteración
+### Estado de los drivers iniciales al cierre de esta iteración
 
 
 | Estado       | Drivers                                                                                                                                                                                              |
 | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `Completely` | `REF-01`, `REF-02`, `REF-03`, `REF-04`, `REF-05`, `CON-01`, `CON-02`, `QA-PER-01`, `QA-PER-02`, `QA-PER-03`, `QA-DIS-01`, `QA-ESC-01`, `QA-INT-01`, `QA-INT-02`, `QA-SEG-01`, `QA-SEG-02`, `QA-SEG-03*`, `QA-EVO-01` |
-| `Partially`  | `QA-PER-04*`, `REF-06`, `QA-USA-01`                                                                                                                                                                  |
-| `Not Yet`    | —                                                                                                                                                                                                     |
+| `Partially`  | `QA-PER-04*`, `REF-06`, `QA-USA-01` *(pasan a la [Iteración 5](ITERACION_5.md))*                                                                                                                     |
+| `Not Yet`    | `REF-07` *(pasa a la [Iteración 6](ITERACION_6.md))*                                                                                                                                                 |

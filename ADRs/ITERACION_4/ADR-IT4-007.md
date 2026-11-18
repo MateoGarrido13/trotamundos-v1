@@ -33,5 +33,5 @@ Opción elegida: **"Opción 1: Módulo de control de acceso en el Orquestador, c
 * HTTP reserva el 401 para la falta de autenticación y el 403 para la falta de permiso. Se respeta el texto del escenario y queda pendiente decidir el código que viaja por la red.
 * La matriz de roles y permisos se fija en el diseño detallado: los drivers solo nombran al participante.
 * La auditoría crece sin límite y también registra los intentos denegados, que aumentan bajo ataque: su retención está por definir.
-* Quitar a un miembro vale desde la siguiente operación, no sobre lo que ya tiene en pantalla o en su copia local ([ADR-IT4-014](ADR-IT4-014.md)).
+* Quitar a un miembro vale desde la siguiente operación, no sobre lo que ya tiene en pantalla o en su copia local ([ADR-IT4-011](ADR-IT4-011.md)).
 * El Orquestador acumula una responsabilidad más. [ADR-IT3-011](../ITERACION_3/ADR-IT3-011.md) prevé reabrir la división si se vuelve un cuello de botella.

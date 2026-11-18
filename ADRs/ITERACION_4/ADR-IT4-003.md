@@ -5,7 +5,7 @@
 * **Decisores:** Mateo Garrido
 
 ## Contexto y Declaración del Problema
-Con las cuentas particionadas por región ([ADR-IT4-001](ADR-IT4-001.md)) aparecen dos problemas. Primero, a qué región va el inicio de sesión de una cuenta existente. Segundo, cómo se evita que el mismo correo quede registrado en dos regiones sin volver a atar el alta a un enlace entre continentes. Verificar la unicidad con un commit global es lo que rechaza [ADR-IT4-015](ADR-IT4-015.md).
+Con las cuentas particionadas por región ([ADR-IT4-001](ADR-IT4-001.md)) aparecen dos problemas. Primero, a qué región va el inicio de sesión de una cuenta existente. Segundo, cómo se evita que el mismo correo quede registrado en dos regiones sin volver a atar el alta a un enlace entre continentes. Verificar la unicidad con un commit global es lo que rechaza [ADR-IT4-012](ADR-IT4-012.md).
 
 ## Impulsores de la Decisión (Decision Drivers)
 * `QA-ESC-01`: confirmación en menos de 2 segundos independientemente del continente, y 0 rechazos por timeout.
