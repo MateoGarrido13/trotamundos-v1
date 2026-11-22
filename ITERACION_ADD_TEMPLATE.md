@@ -1,6 +1,6 @@
 # TEMPLATE — Iteración ADD 3.0
 
-Copiá este archivo como `ITERACION_N.md`. El paso 1 se completa una vez por ronda. Cada iteración recorre los pasos 2 a 7.
+Copiá este archivo como `RONDA_X/ITERACION_N.md`. El paso 1 se completa una vez por ronda. Cada iteración recorre los pasos 2 a 7.
 
 # [Sistema] — iteración [N]
 

@@ -9,11 +9,11 @@ Al incorporar el Módulo de Asistente Virtual (`REF-07`), se evaluó que el prop
 
 ## Impulsores de la Decisión (Decision Drivers)
 * `REF-07`: gestionar consultas, reprogramaciones menores y delegación de casos complejos a la agencia preferida.
-* `QA-SEG-02`: autorización por itinerario y auditoría en la misma transacción ([ADR-IT4-007](../ITERACION_4/ADR-IT4-007.md)).
-* `REF-04` y `REF-05`: un único camino de escritura polimórfica ([ADR-IT4-008](../ITERACION_4/ADR-IT4-008.md)) y desacoplamiento asíncrono de la agencia por el Broker ([ADR-IT4-010](../ITERACION_4/ADR-IT4-010.md), [ADR-IT4-014](../ITERACION_4/ADR-IT4-014.md)).
+* `QA-SEG-02`: autorización por itinerario y auditoría en la misma transacción ([ADR-IT4-007](../../../RONDA_1/ADRs/ITERACION_4/ADR-IT4-007.md)).
+* `REF-04` y `REF-05`: un único camino de escritura polimórfica ([ADR-IT4-008](../../../RONDA_1/ADRs/ITERACION_4/ADR-IT4-008.md)) y desacoplamiento asíncrono de la agencia por el Broker ([ADR-IT4-010](../../../RONDA_1/ADRs/ITERACION_4/ADR-IT4-010.md), [ADR-IT4-014](../../../RONDA_1/ADRs/ITERACION_4/ADR-IT4-014.md)).
 
 ## Opciones Consideradas
-* Opción 1: El Módulo de Asistente Virtual delega todas las lecturas, reprogramaciones y aperturas de casos de agencia en el Orquestador de viajes ([ADR-IT6-002](ADR-IT6-002.md), [ADR-IT6-003](ADR-IT6-003.md)).
+* Opción 1: El Módulo de Asistente Virtual delega todas las lecturas, reprogramaciones y aperturas de casos de agencia en el Orquestador de viajes ([ADR-IT1-002](ADR-IT1-002.md), [ADR-IT1-003](ADR-IT1-003.md)).
 * Opción 2: Acceso directo del Módulo de Asistente Virtual a la Base de viajes y a la API externa de la agencia preferida.
 
 ## Resultado de la Decisión
@@ -25,4 +25,4 @@ Opción elegida: **"Opción 1: todo acceso a viajes, reservas y casos de agencia
 
 ### Consecuencias Negativas (Trade-offs / Riesgos)
 * Toda operación del Asistente requiere una llamada interna al Orquestador de viajes.
-* Condición de reapertura: solo si en el futuro se reabriera el *Split module* del Orquestador ([ADR-IT3-011](../ITERACION_3/ADR-IT3-011.md)), en cuyo caso el Asistente llamaría al servicio extraído correspondiente y nunca a la base de datos de otro componente.
+* Condición de reapertura: solo si en el futuro se reabriera el *Split module* del Orquestador ([ADR-IT3-011](../../../RONDA_1/ADRs/ITERACION_3/ADR-IT3-011.md)), en cuyo caso el Asistente llamaría al servicio extraído correspondiente y nunca a la base de datos de otro componente.

@@ -1,6 +1,6 @@
 # Políticas de Especificaciones (Specs) y Planes — Trotamundos
 
-Este documento define las reglas, plantillas y convenciones para elaborar las **especificaciones contractuales (`specs/`)** y los **planes de implementación (`planes/`)** del prototipo arquitectónico de **Trotamundos**, manteniendo trazabilidad completa hacia el proceso ADD ([ITERACION_1.md](ITERACION_1.md) a [ITERACION_4.md](ITERACION_4.md)), los ADRs (`ADRs/`) y el listado cerrado de drivers ([LISTADO_DRIVERS.md](LISTADO_DRIVERS.md)).
+Este documento define las reglas, plantillas y convenciones para elaborar las **especificaciones contractuales (`specs/`)** y los **planes de implementación (`planes/`)** del prototipo arquitectónico de **Trotamundos**, manteniendo trazabilidad completa hacia el proceso ADD ([ITERACION_1.md](RONDA_1/ITERACION_1.md) a [ITERACION_5.md](RONDA_1/ITERACION_5.md)), los ADRs (`RONDA_1/ADRs/` y `RONDA_2/ADRs/`) y los listados cerrados de drivers ([RONDA_1/LISTADO_DRIVERS_RONDA_1.md](RONDA_1/LISTADO_DRIVERS_RONDA_1.md) y [RONDA_2/LISTADO_DRIVERS_RONDA_2.md](RONDA_2/LISTADO_DRIVERS_RONDA_2.md)).
 
 ---
 
@@ -10,8 +10,8 @@ Cada línea de código y cada prueba automatizada del prototipo debe poder rastr
 
 ```mermaid
 flowchart LR
-    D["Driver (LISTADO_DRIVERS.md)"] --> A["ADR aceptado (ADRs/ITERACION_N)"]
-    A --> E["Elemento del Paso 5 (ITERACION_N.md)"]
+    D["Driver (RONDA_1/LISTADO_DRIVERS_RONDA_1.md o RONDA_2/LISTADO_DRIVERS_RONDA_2.md)"] --> A["ADR aceptado (RONDA_X/ADRs/ITERACION_N)"]
+    A --> E["Elemento del Paso 5 (RONDA_X/ITERACION_N.md)"]
     E --> S["SPEC (specs/SPEC-AREA-NN.md)"]
     S --> P["PLAN (planes/PLAN-AREA-NN.md)"]
     P --> T["Tarea (T-AREA-NN-MM)"]
@@ -21,7 +21,7 @@ flowchart LR
 
 1. **Nada entra al código sin Spec aprobada y Plan aprobado.**
 2. **La Spec no toma decisiones arquitectónicas:** transcribe y formaliza contractualmente lo que ya decidieron el Paso 5 y los ADRs `aceptado`. Si al redactar una Spec aparece una elección de arquitectura no cubierta por un ADR, la Spec se frena y se registra primero el ADR con `skill-adrs`.
-3. **Respeto estricto a `LISTADO_DRIVERS.md`:** según la regla `.cursor/rules/listado-drivers-cerrado.mdc`, ninguna Spec ni Plan puede inventar o citar un driver que no exista en `LISTADO_DRIVERS.md`.
+3. **Respeto estricto a `RONDA_1/LISTADO_DRIVERS_RONDA_1.md`:** según la regla `.cursor/rules/listado-drivers-cerrado.mdc`, ninguna Spec ni Plan puede inventar o citar un driver que no exista en `RONDA_1/LISTADO_DRIVERS_RONDA_1.md` o en `RONDA_2/LISTADO_DRIVERS_RONDA_2.md`.
 
 ---
 
@@ -30,7 +30,7 @@ flowchart LR
 | Aspecto | **SPEC (`specs/SPEC-<AREA>-<NN>.md`)** | **PLAN (`planes/PLAN-<AREA>-<NN>.md`)** |
 | :--- | :--- | :--- |
 | **Pregunta que responde** | *¿Qué hace este elemento y cuál es su contrato exacto?* | *¿Cómo lo construimos en el prototipo y en qué orden?* |
-| **Fuentes permitidas** | Paso 5 y Paso 7 de `ITERACION_N.md`, ADRs en estado `aceptado`, `LISTADO_DRIVERS.md`. | La Spec ya `aprobada` y el stack definido en [planes/PLAN_MAESTRO.md](planes/PLAN_MAESTRO.md). |
+| **Fuentes permitidas** | Paso 5 y Paso 7 de `RONDA_X/ITERACION_N.md`, ADRs en estado `aceptado`, `RONDA_1/LISTADO_DRIVERS_RONDA_1.md` o `RONDA_2/LISTADO_DRIVERS_RONDA_2.md`. | La Spec ya `aprobada` y el stack definido en [planes/PLAN_MAESTRO.md](planes/PLAN_MAESTRO.md). |
 | **Nivel de abstracción** | Contractual: operaciones, entradas, salidas, errores, cotas, invariantes y criterios de aceptación. | Implementación: archivos a crear, clases/funciones, mocks, tareas chicas y nombres de tests. |
 | **Cuándo cambia** | Solo si se modifica o agrega un ADR o se ajusta el alcance del prototipo. | Puede ajustarse libremente durante la implementación mientras siga cumpliendo el 100 % de los `AC` de su Spec. |
 | **Confirmación** | Requiere respuesta explícita **`OK SPEC`** del usuario. | Requiere respuesta explícita **`OK PLAN`** del usuario. |
@@ -67,7 +67,7 @@ trotamundos-v1/
 | `RES` | Viajes, Modelo Polimórfico y Permisos | Modelo `Reserva` (con `lugar` y `origen`), Registro de tipos, Operaciones manuales, Módulo de control de acceso y auditoría, Base de viajes (2PC) |
 | `ING` | Broker, Ingesta y Correo | Broker (5 colas acotadas), Servicio de ingesta, Adaptador de anuncios (Booking), Gestor de autorización de correo, Adaptador de correo, Parseo aislado, Filtro whitelist |
 | `NOT` | Notificaciones y Canales | Servicio de notificaciones, `ICanal`, Adaptadores de Email, WhatsApp e Instagram |
-| `AGE` | Chatbot y Agencia Preferida | Módulo de Asistente Virtual (Opción B), `IAgencia`, Adaptador de agencia, cola de casos de ayuda |
+| `AGE` | Chatbot y Agencia Preferida | Módulo de Asistente Virtual, `IAgencia`, Adaptador de agencia, cola de casos de ayuda |
 | `ANA` | Analítica de Datos | Quinta cola del Broker (eventos analíticos), Camino y almacén de lectura analítico |
 | `CLI` | Clientes Web y Móvil | Cliente web y Cliente móvil (con geolocalización nativa sobre `Reserva.lugar`) |
 

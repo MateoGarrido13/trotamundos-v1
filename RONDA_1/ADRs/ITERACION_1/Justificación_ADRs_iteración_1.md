@@ -2,7 +2,7 @@
 
 *Método ADD · TPE Diseño de Sistemas de Software · 28 de octubre de 2026*
 
-Para cada ADR de la iteración 1 se indica por qué se eligió, qué se perdió y qué alternativa quedó más cerca de ganar. La base son los 13 ADRs, `ITERACION_1.md`, `LISTADO_DRIVERS.md` y el enunciado del TPE. Donde la justificación del repo es débil, se marca como tal. Las cuentas y observaciones que no están en el repo son análisis propio.
+Para cada ADR de la iteración 1 se indica por qué se eligió, qué se perdió y qué alternativa quedó más cerca de ganar. La base son los 13 ADRs, `RONDA_1/ITERACION_1.md`, `../../LISTADO_DRIVERS_RONDA_1.md` y el enunciado del TPE. Donde la justificación del repo es débil, se marca como tal. Las cuentas y observaciones que no están en el repo son análisis propio.
 
 ## Estilo del Core
 

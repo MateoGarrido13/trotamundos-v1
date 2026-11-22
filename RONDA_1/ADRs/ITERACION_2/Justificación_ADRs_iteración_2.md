@@ -2,7 +2,7 @@
 
 *Método ADD · TPE Diseño de Sistemas de Software · 28 de octubre de 2026*
 
-Para cada ADR de la iteración 2 se indica por qué se eligió, qué se perdió y qué alternativa quedó más cerca de ganar. La base son los 6 ADRs (`ADR-IT2-01` a `ADR-IT2-06`), `ITERACION_2.md`.
+Para cada ADR de la iteración 2 se indica por qué se eligió, qué se perdió y qué alternativa quedó más cerca de ganar. La base son los 6 ADRs (`ADR-IT2-01` a `ADR-IT2-06`), `RONDA_1/ITERACION_2.md`.
 
 ## Performance: la cota de tiempo y la respuesta por defecto
 
@@ -71,7 +71,7 @@ Para cada ADR de la iteración 2 se indica por qué se eligió, qué se perdió 
 - **Split-brain.** Si la primaria no cayó sino que quedó aislada y vuelve, dos bases podrían aceptar escrituras. Hace falta un mecanismo que impida a la antigua primaria seguir escribiendo (fencing).
 - **Sin respaldo tras la conmutación.** Después del traspaso hay una sola copia hasta reconstruir un nuevo respaldo, y una segunda falla en ese período ya no tiene recuperación.
 
-**Una inconsistencia en el enunciado del goal.** `QA-DIS-01` se describe en `ITERACION_2.md` como la «caída de un nodo de cotización», pero la reconfiguración se aplica a la base de datos. La caída de un nodo del tier de negocio ya está cubierta por el clúster con balanceador (ADR-002). Conviene aclarar en el escenario que lo que se refina acá es el nivel de datos.
+**Una inconsistencia en el enunciado del goal.** `QA-DIS-01` se describe en `RONDA_1/ITERACION_2.md` como la «caída de un nodo de cotización», pero la reconfiguración se aplica a la base de datos. La caída de un nodo del tier de negocio ya está cubierta por el clúster con balanceador (ADR-002). Conviene aclarar en el escenario que lo que se refina acá es el nivel de datos.
 
 **Alternativa que quedó más cerca de ganar.** La recuperación manual es la más barata y sin riesgo de split-brain, pero no garantiza el presupuesto mensual.
 

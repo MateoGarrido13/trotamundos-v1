@@ -10,7 +10,7 @@ Para interpretar el lenguaje natural del viajero en el Asistente Virtual (`REF-0
 ## Impulsores de la Decisión (Decision Drivers)
 * `REF-07`: el asistente debe seguir operando como primer nivel de soporte para consultas de estado, reprogramaciones menores y derivación a la agencia.
 * `QA-DIS-01`: tolerar fallos de componentes o servicios externos sin dejar inoperante el soporte al viajero.
-* Reutilizar Capa Anti-Corrupción ([ADR-007](../ITERACION_1/ADR-007.md)), *Bound execution times* ([ADR-IT2-001](../ITERACION_2/ADR-IT2-001.md)) y *Graceful degradation* ([ADR-IT2-002](../ITERACION_2/ADR-IT2-002.md)).
+* Reutilizar Capa Anti-Corrupción ([ADR-007](../../../RONDA_1/ADRs/ITERACION_1/ADR-007.md)), *Bound execution times* ([ADR-IT2-001](../../../RONDA_1/ADRs/ITERACION_2/ADR-IT2-001.md)) y *Graceful degradation* ([ADR-IT2-002](../../../RONDA_1/ADRs/ITERACION_2/ADR-IT2-002.md)).
 
 ## Opciones Consideradas
 * Opción 1: Encapsular la interpretación de intención detrás del contrato interno `IMotorConversacional` (`interpretar(mensaje, contextoViaje)`), con una cota de espera (*Bound execution times*) y sin *Retry* bloqueante. Si el motor conversacional responde dentro de la cota, el Asistente procesa la intención en lenguaje natural. Si la cota vence o el motor falla, aplica *Graceful degradation*: presenta opciones estructuradas de primer nivel (1. Consultar estado de reserva, 2. Reprogramar fecha/datos, 3. Escalar problema complejo a mi agencia preferida) para que el viajero resuelva o escale su caso sin interrupción.

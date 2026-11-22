@@ -2,7 +2,7 @@
 
 *Método ADD · TPE Diseño de Sistemas de Software · 28 de octubre de 2026*
 
-Para cada ADR de la iteración 3 se indica por qué se eligió, qué se perdió y qué alternativa quedó más cerca de ganar. La base son los 15 ADRs (`ADR-IT3-001` a `ADR-IT3-015`), `ITERACION_3.md`, las cifras que acompañan algunas cuentas son hipótesis de ejemplo, no datos del enunciado.
+Para cada ADR de la iteración 3 se indica por qué se eligió, qué se perdió y qué alternativa quedó más cerca de ganar. La base son los 15 ADRs (`ADR-IT3-001` a `ADR-IT3-015`), `RONDA_1/ITERACION_3.md`, las cifras que acompañan algunas cuentas son hipótesis de ejemplo, no datos del enunciado.
 
 ## Ingesta asíncrona
 

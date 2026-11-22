@@ -8,9 +8,9 @@
 
 | Tipo | Identificadores |
 | :--- | :--- |
-| **Drivers** | `[Rótulos de LISTADO_DRIVERS.md]` |
+| **Drivers** | `[Rótulos de ../RONDA_1/LISTADO_DRIVERS_RONDA_1.md]` |
 | **ADRs** | `[ADR-XXX, ADR-IT2-XXX, ADR-IT3-XXX, ADR-IT4-XXX]` |
-| **Elemento del paso 5** | `[ITERACION_N.md §Subsección]` |
+| **Elemento del paso 5** | `[RONDA_X/ITERACION_N.md §Subsección]` |
 | **Incremento (Slice)** | `[Slice 1..5 de planes/PLAN_MAESTRO.md]` |
 
 ## Propósito y Responsabilidad
@@ -60,4 +60,4 @@
 
 | Fecha | Cambio | Motivo |
 | :--- | :--- | :--- |
-| YYYY-MM-DD | Versión inicial (`borrador`) | Creación a partir de `ITERACION_N.md` |
+| YYYY-MM-DD | Versión inicial (`borrador`) | Creación a partir de `RONDA_X/ITERACION_N.md` |

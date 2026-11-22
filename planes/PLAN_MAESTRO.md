@@ -7,9 +7,10 @@ Este documento registra las decisiones confirmadas de alcance, las 6 iteraciones
 ## 1. Decisiones Confirmadas de Alcance y Diseño
 
 1. **Iteraciones del proceso ADD (6 iteraciones completas):**
-   - **Iteraciones 1 a 4:** topología N-Tier del Core, cotas de tiempo y degradación, Broker e ingesta asíncrona, identidad particionada por región, seguridad de login/itinerarios, gestión manual y agencia preferida ([ITERACION_1.md](../ITERACION_1.md) a [ITERACION_4.md](../ITERACION_4.md)).
-   - **Iteración 5:** cierre de los drivers de analítica desacoplada (`QA-PER-04*`, `REF-06`) y experiencia móvil con capacidad nativa GPS (`QA-USA-01`) ([ITERACION_5.md](../ITERACION_5.md)).
-   - **Iteración 6:** incorporación del requerimiento funcional avanzado obligatorio de la segunda entrega: **Opción B — Asistente Virtual / Chatbot (`REF-07`)** ([ITERACION_6.md](../ITERACION_6.md)).
+   - **Iteraciones 1 a 4:** topología N-Tier del Core, cotas de tiempo y degradación, Broker e ingesta asíncrona, identidad particionada por región, seguridad de login/itinerarios, gestión manual y agencia preferida ([ITERACION_1.md](../RONDA_1/ITERACION_1.md) a [ITERACION_4.md](../RONDA_1/ITERACION_4.md)).
+   - **Iteración 5:** cierre de los drivers de analítica desacoplada (`QA-PER-04*`, `REF-06`) y experiencia móvil con capacidad nativa GPS (`QA-USA-01`) ([ITERACION_5.md](../RONDA_1/ITERACION_5.md)).
+   - **Iteración 1:** incorporación del requerimiento funcional avanzado obligatorio de la segunda entrega: **Asistente Virtual / Chatbot (`REF-07`)** y disponibilidad ante fallo de proveedor de IA (`QA-DIS-02`) ([ITERACION_1.md](../RONDA_2/ITERACION_1.md)).
+   - **Iteración 2:** tiempo de respuesta (`QA-PER-05`) y seguridad (`QA-SEG-04`) del asistente virtual ([ITERACION_2.md](../RONDA_2/ITERACION_2.md)).
 2. **Organización de artefactos SDD:** carpetas `specs/` y `planes/` separadas en la raíz del repositorio, regidas por [POLITICAS_SPECS_Y_PLANES.md](../POLITICAS_SPECS_Y_PLANES.md) y asistidas por `.cursor/skills/skill-specs` y `.cursor/skills/skill-plan`.
 3. **Proveedores y terceros (`CON-02`):** se implementan como **mocks locales configurables** detrás de sus respectivos adaptadores (`IProveedor`, `ICotizadorHotel`, `IProveedorInventario`, `IProveedorArrendadora`, `ICanal`, `IAgencia`, `IMotorConversacional`, API de correo). Cada mock permite inyectar demoras artificiales o fallos para demostrar en vivo los timeouts, la degradación elegante, el failover y los reintentos.
 

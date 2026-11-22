@@ -21,7 +21,7 @@ Al invocar, leer solo:
 
 1. El markdown de iteración que el usuario nombró.
 2. `ADR_TEMPLATE.md` en la raíz del repositorio. El formato de cada ADR es el de ese archivo.
-3. `LISTADO_DRIVERS.md` solo para comprobar un rótulo antes de citarlo. No editarlo.
+3. `RONDA_1/LISTADO_DRIVERS_RONDA_1.md` solo para comprobar un rótulo antes de citarlo. No editarlo.
 
 Si el usuario no nombra un archivo, preguntar cuál es. No elegir uno por su cuenta. Una iteración por invocación.
 
@@ -77,7 +77,7 @@ Opción elegida: **"…"**, porque …
 
 `NNN` sigue al mayor `ADR-NNN` ya presente en el archivo. Si no hay, empieza en `ADR-001`.
 
-Un campo se llena solo si el texto está en el archivo o en este chat, y se copia. Transcribir celdas vale: `Beneficia` y `Perjudica` de la fila elegida pueden ser consecuencias; los ids del goal o de esa fila pueden ser impulsores, citados con su rótulo de `LISTADO_DRIVERS.md`.
+Un campo se llena solo si el texto está en el archivo o en este chat, y se copia. Transcribir celdas vale: `Beneficia` y `Perjudica` de la fila elegida pueden ser consecuencias; los ids del goal o de esa fila pueden ser impulsores, citados con su rótulo de `RONDA_1/LISTADO_DRIVERS_RONDA_1.md`.
 
 No rellenar para llegar a tres opciones. Las que no estén escritas no existen todavía.
 
@@ -95,7 +95,7 @@ Si no hay fuente, hacer la pregunta abierta y decir que no hay un posible dato. 
 
 Un posible dato no queda escrito en el borrador hasta que el usuario lo acepta.
 
-No citar un rótulo que no esté en `LISTADO_DRIVERS.md`. Si el texto trae un escenario, caso de uso, concern o restricción fuera de ese listado, preguntar. No incorporarlo como impulsor.
+No citar un rótulo que no esté en `RONDA_1/LISTADO_DRIVERS_RONDA_1.md`. Si el texto trae un escenario, caso de uso, concern o restricción fuera de ese listado, preguntar. No incorporarlo como impulsor.
 
 ## Flujo
 

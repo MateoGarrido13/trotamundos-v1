@@ -22,7 +22,7 @@ Al invocar, leer solo:
 
 1. El markdown de iteración que el usuario nombró.
 2. Esta skill. El catálogo de vistas es el de abajo.
-3. `LISTADO_DRIVERS.md` solo para comprobar un rótulo antes de ponerlo en el diagrama. No editarlo.
+3. `RONDA_1/LISTADO_DRIVERS_RONDA_1.md` solo para comprobar un rótulo antes de ponerlo en el diagrama. No editarlo.
 
 Si el usuario no nombra un archivo, preguntar cuál es. No elegir uno. Una iteración por invocación.
 
@@ -86,7 +86,7 @@ Si no hay fuente, hacer la pregunta abierta y decir que no hay un posible dato. 
 
 Un posible dato no entra en el dibujo hasta que el usuario lo acepta.
 
-No citar un rótulo que no esté en `LISTADO_DRIVERS.md`. Si el texto trae un escenario, caso de uso, concern o restricción fuera de ese listado, preguntar. No ponerlo en la vista.
+No citar un rótulo que no esté en `RONDA_1/LISTADO_DRIVERS_RONDA_1.md`. Si el texto trae un escenario, caso de uso, concern o restricción fuera de ese listado, preguntar. No ponerlo en la vista.
 
 ## Cómo se dibuja
 

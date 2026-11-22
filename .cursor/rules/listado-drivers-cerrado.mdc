@@ -1,16 +1,16 @@
 ---
-description: LISTADO_DRIVERS.md está verificado y autorizado. No modificarlo sin confirmación explícita del usuario.
+description: RONDA_1/LISTADO_DRIVERS_RONDA_1.md está verificado y autorizado. No modificarlo sin confirmación explícita del usuario.
 alwaysApply: true
 ---
 
 # Listado de drivers cerrado
 
-`LISTADO_DRIVERS.md` está verificado y autorizado por los desarrolladores.
+`RONDA_1/LISTADO_DRIVERS_RONDA_1.md` y `RONDA_2/LISTADO_DRIVERS_RONDA_2.md` están verificados y autorizados por los desarrolladores. El primero es la Ronda 1. El segundo es la Ronda 2.
 
-No editar ese archivo, ni una parte, hasta proponer el cambio y recibir un sí explícito en el mensaje del usuario. Citarlo, leerlo y usarlo como fuente no requiere permiso.
+No editar esos archivos, ni una parte, hasta proponer el cambio y recibir un sí explícito en el mensaje del usuario. Citarlos, leerlos y usarlos como fuente no requiere permiso.
 
-Si otro archivo (README, iteración, ADR) pide un cambio que solo se cumple tocando el listado, dejar el listado como está y preguntar antes.
+Si otro archivo (README, iteración, ADR) pide un cambio que solo se cumple tocando un listado, dejar el listado como está y preguntar antes.
 
-En README, iteraciones y ADR solo se mencionan drivers cuyo rótulo está en `LISTADO_DRIVERS.md`. No nombrar otro escenario, caso de uso, concern o restricción como driver.
+En README, iteraciones y ADR solo se mencionan drivers cuyo rótulo está en `RONDA_1/LISTADO_DRIVERS_RONDA_1.md` o en `RONDA_2/LISTADO_DRIVERS_RONDA_2.md`. No nombrar otro escenario, caso de uso, concern o restricción como driver. Un driver de la Ronda 2 no se copia en el listado de la Ronda 1.
 
 Para agregar un driver, proponer el rótulo y el texto al usuario y esperar un sí. Recién después se escribe en el listado y se puede citar.
