@@ -12,22 +12,22 @@ Cada línea de código y cada prueba automatizada del prototipo debe poder rastr
 flowchart LR
     D["Driver (RONDA_1/LISTADO_DRIVERS_RONDA_1.md o RONDA_2/LISTADO_DRIVERS_RONDA_2.md)"] --> A["ADR aceptado (RONDA_X/ADRs/ITERACION_N)"]
     A --> E["Elemento del Paso 5 (RONDA_X/ITERACION_N.md)"]
-    E --> S["SPEC (specs/SPEC-AREA-NN.md)"]
-    S --> P["PLAN (planes/PLAN-AREA-NN.md)"]
-    P --> T["Tarea (T-AREA-NN-MM)"]
-    T --> C["Código + Test (AC_AREA_NN_MM)"]
+    E --> S["SPEC (specs/SPEC-REF-NN.md)"]
+    S --> P["PLAN (planes/PLAN-REF-NN.md)"]
+    P --> T["Tarea (T-REF-NN-MM)"]
+    T --> C["Código + Test (AC_REF_NN_MM)"]
     C -. "verifica" .-> S
 ```
 
 1. **Nada entra al código sin Spec aprobada y Plan aprobado.**
-2. **La Spec no toma decisiones arquitectónicas:** transcribe y formaliza contractualmente lo que ya decidieron el Paso 5 y los ADRs `aceptado`. Si al redactar una Spec aparece una elección de arquitectura no cubierta por un ADR, la Spec se frena y se registra primero el ADR con `skill-adrs`.
+2. **La Spec no toma decisiones arquitectónicas:** transcribe y formaliza contractualmente lo que ya decidieron el Paso 5 y los ADRs `aceptado`. Enumera los elementos del Paso 5 que realizan su requerimiento funcional y copia, en «Conceptos de diseño aceptados», la restricción del ADR `aceptado`. Si al redactar una Spec aparece una elección de arquitectura no cubierta por un ADR, la Spec se frena y se registra primero el ADR con `skill-adrs`.
 3. **Respeto estricto a `RONDA_1/LISTADO_DRIVERS_RONDA_1.md`:** según la regla `.cursor/rules/listado-drivers-cerrado.mdc`, ninguna Spec ni Plan puede inventar o citar un driver que no exista en `RONDA_1/LISTADO_DRIVERS_RONDA_1.md` o en `RONDA_2/LISTADO_DRIVERS_RONDA_2.md`.
 
 ---
 
 ## 2. Diferencia entre una Spec y un Plan
 
-| Aspecto | **SPEC (`specs/SPEC-<AREA>-<NN>.md`)** | **PLAN (`planes/PLAN-<AREA>-<NN>.md`)** |
+| Aspecto | **SPEC (`specs/SPEC-REF-<NN>.md`)** | **PLAN (`planes/PLAN-REF-<NN>.md`)** |
 | :--- | :--- | :--- |
 | **Pregunta que responde** | *¿Qué hace este elemento y cuál es su contrato exacto?* | *¿Cómo lo construimos en el prototipo y en qué orden?* |
 | **Fuentes permitidas** | Paso 5 y Paso 7 de `RONDA_X/ITERACION_N.md`, ADRs en estado `aceptado`, `RONDA_1/LISTADO_DRIVERS_RONDA_1.md` o `RONDA_2/LISTADO_DRIVERS_RONDA_2.md`. | La Spec ya `aprobada` y el stack definido en [planes/PLAN_MAESTRO.md](planes/PLAN_MAESTRO.md). |
@@ -47,36 +47,38 @@ trotamundos-v1/
 ├── TRAZABILIDAD.md                   # Matriz global Driver -> ADR -> SPEC -> AC -> Test
 ├── specs/
 │   ├── SPEC_TEMPLATE.md              # Plantilla obligatoria de Spec
-│   └── SPEC-<AREA>-<NN>.md           # Una spec por elemento o contrato
+│   └── SPEC-REF-<NN>.md              # Una spec por requerimiento funcional REF-01 a REF-07
 ├── planes/
 │   ├── PLAN_TEMPLATE.md              # Plantilla obligatoria de Plan
 │   ├── PLAN_MAESTRO.md               # Hoja de ruta de los 5 slices del prototipo y stack
-│   └── PLAN-<AREA>-<NN>.md           # Un plan por cada SPEC aprobada (mismo sufijo)
+│   └── PLAN-REF-<NN>.md              # Un plan por cada SPEC aprobada (mismo sufijo)
 └── .cursor/skills/
     ├── skill-specs/SKILL.md          # Skill interactiva para redactar specs
     └── skill-plan/SKILL.md           # Skill interactiva para redactar planes
 ```
 
-### 3.1. Códigos de `<AREA>`
+### 3.1. Códigos de `<REF>`
 
-| Código | Área arquitectónica | Elementos principales del Paso 5 que agrupa |
+La unidad de una spec es un requerimiento funcional, `REF-01` a `REF-07`. No hay una spec por elemento del Paso 5 y el archivo no lleva título de ronda. Dentro de la spec se agrupan los drivers de calidad y las restricciones que la iteración ata a esa funcionalidad, y se transcriben los conceptos de diseño cuyo ADR está `aceptado`. Esos conceptos guían cómo se implementa el requerimiento. La spec enumera los elementos del Paso 5 que lo realizan y no elige arquitectura nueva.
+
+| Código | Requerimiento | Spec |
 | :--- | :--- | :--- |
-| `AUT` | Registro, Cuentas y Autenticación | Módulo de registro y autenticación (×3 regiones), Base de cuentas, Flujo de recuperación, `IRegistroUsuario` |
-| `GW` | Borde, Gateway y Balanceo | Caché de borde (CDN), API Gateway (firma JWT, rate limit), Balanceador de Carga |
-| `COT` | Cotización y Proveedores Síncronos | Orquestador de viajes (cotización Scatter-Gather), `IProveedor`, Adaptadores de aerolíneas, hoteles y arrendadoras |
-| `RES` | Viajes, Modelo Polimórfico y Permisos | Modelo `Reserva` (con `lugar` y `origen`), Registro de tipos, Operaciones manuales, Módulo de control de acceso y auditoría, Base de viajes (2PC) |
-| `ING` | Broker, Ingesta y Correo | Broker (5 colas acotadas), Servicio de ingesta, Adaptador de anuncios (Booking), Gestor de autorización de correo, Adaptador de correo, Parseo aislado, Filtro whitelist |
-| `NOT` | Notificaciones y Canales | Servicio de notificaciones, `ICanal`, Adaptadores de Email, WhatsApp e Instagram |
-| `AGE` | Chatbot y Agencia Preferida | Módulo de Asistente Virtual, `IAgencia`, Adaptador de agencia, cola de casos de ayuda |
-| `ANA` | Analítica de Datos | Quinta cola del Broker (eventos analíticos), Camino y almacén de lectura analítico |
-| `CLI` | Clientes Web y Móvil | Cliente web y Cliente móvil (con geolocalización nativa sobre `Reserva.lugar`) |
+| `REF-01` | Ciclo de vida del viaje | `SPEC-REF-01` |
+| `REF-02` | Procesamiento de correo | `SPEC-REF-02` |
+| `REF-03` | Filtros y whitelists | `SPEC-REF-03` |
+| `REF-04` | Gestión manual | `SPEC-REF-04` |
+| `REF-05` | Resolución de problemas | `SPEC-REF-05` |
+| `REF-06` | Analítica de datos | `SPEC-REF-06` |
+| `REF-07` | Asistente virtual (Chatbot) | `SPEC-REF-07` |
+
+Registro y autenticación, cotización, caché de borde, novedades de Booking (`QA-PER-01`), notificaciones (`QA-INT-02`) y el cliente con GPS (`QA-USA-01`) no tienen spec en esta tanda.
 
 ### 3.2. Identificadores Estables
 
-- **Especificación:** `SPEC-<AREA>-<NN>` (ej. `SPEC-COT-01`).
-- **Criterio de aceptación:** `AC-<AREA>-<NN>-<MM>` (ej. `AC-COT-01-01`).
-- **Plan:** `PLAN-<AREA>-<NN>` (mismo `<AREA>-<NN>` que la Spec que implementa).
-- **Tarea:** `T-<AREA>-<NN>-<MM>` (ej. `T-COT-01-01`).
+- **Especificación:** `SPEC-REF-<NN>` (ej. `SPEC-REF-01`). `<NN>` es el mismo número del rótulo `REF-<NN>`.
+- **Criterio de aceptación:** `AC-REF-<NN>-<MM>` (ej. `AC-REF-01-01`).
+- **Plan:** `PLAN-REF-<NN>` (mismo sufijo que la Spec que implementa).
+- **Tarea:** `T-REF-<NN>-<MM>` (ej. `T-REF-01-01`).
 - Un identificador **nunca se reutiliza** si una spec o tarea se descarta.
 
 ---
@@ -96,11 +98,11 @@ trotamundos-v1/
 
 ## 5. Reglas para Redactar un Plan (`skill-plan`)
 
-1. **Precondición:** solo se redacta `PLAN-<AREA>-<NN>` cuando `SPEC-<AREA>-<NN>` está en estado `aprobada`.
+1. **Precondición:** solo se redacta `PLAN-REF-<NN>` cuando `SPEC-REF-<NN>` está en estado `aprobada`.
 2. **Alineación con los 5 Incrementos (Vertical Slices):** cada plan se ubica dentro de uno de los 5 slices definidos en [planes/PLAN_MAESTRO.md](planes/PLAN_MAESTRO.md).
 3. **Mapeo 1 a 1 entre paquetes de código y elementos del Paso 5:** la tabla *Estructura de Código* del plan debe mostrar qué carpeta/archivo representa a cada componente del Paso 5 y qué imports tiene prohibidos para hacer cumplir la arquitectura en el código.
 4. **Cobertura total de `AC`:**
-   - Toda tarea `T-<AREA>-<NN>-<MM>` cubre al menos un `AC-<AREA>-<NN>-<KK>`.
+   - Toda tarea `T-REF-<NN>-<MM>` cubre al menos un `AC-REF-<NN>-<KK>`.
    - Todo `AC` de la Spec figura en la *Matriz de Cobertura* asociado a una tarea y al nombre exacto de su test automatizado.
 5. **Inyección de fallos para demostrar tácticas:** cuando la Spec involucra una táctica de disponibilidad, performance o seguridad (ej. timeout de 800 ms, caída de nodo, caída de Base primaria, cola llena, ráfaga de 50 requests), el plan debe incluir el mecanismo de prueba que provoca el estímulo y verifica la respuesta arquitectónica.
 
@@ -110,12 +112,12 @@ trotamundos-v1/
 
 - **Encabezado de archivo fuente:**
   ```python
-  # SPEC: SPEC-<AREA>-<NN>
+  # SPEC: SPEC-REF-<NN>
   # ELEMENTO PASO 5: <Nombre del elemento> (ITERACION_<N>)
   # ADRs: ADR-..., ADR-IT...
   # DRIVERS: QA-..., REF-...
   ```
 - **Nombre de los tests automatizados:**
-  `test_AC_<AREA>_<NN>_<MM>_<descripcion_corta>` (ej. `test_AC_SEG_01_02_rafaga_50_recuperaciones_deja_un_solo_pedido_vigente`).
+  `test_AC_REF_<NN>_<MM>_<descripcion_corta>` (ej. `test_AC_REF_04_02_sin_permiso_presenta_pagina_error_401`).
 - **Mensajes de commit:**
-  `[T-<AREA>-<NN>-<MM>] <descripción corta> (SPEC-<AREA>-<NN>)`.
+  `[T-REF-<NN>-<MM>] <descripción corta> (SPEC-REF-<NN>)`.

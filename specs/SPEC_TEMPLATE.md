@@ -1,4 +1,4 @@
-# SPEC-<AREA>-<NN>. [Nombre exacto del elemento del paso 5]
+# SPEC-REF-<NN>. [Nombre del requerimiento funcional]
 
 * **Estado:** borrador | aprobada | implementada | verificada | descartada
 * **Fecha:** YYYY-MM-DD
@@ -8,14 +8,26 @@
 
 | Tipo | Identificadores |
 | :--- | :--- |
-| **Drivers** | `[Rótulos de ../RONDA_1/LISTADO_DRIVERS_RONDA_1.md]` |
-| **ADRs** | `[ADR-XXX, ADR-IT2-XXX, ADR-IT3-XXX, ADR-IT4-XXX]` |
+| **Drivers** | `[REF de esta spec y los QA o CON que la iteración ata a esa funcionalidad]` |
+| **ADRs** | `[Solo ADR en estado aceptado]` |
 | **Elemento del paso 5** | `[RONDA_X/ITERACION_N.md §Subsección]` |
 | **Incremento (Slice)** | `[Slice 1..5 de planes/PLAN_MAESTRO.md]` |
 
 ## Propósito y Responsabilidad
 
-[Transcripción fiel de la responsabilidad asignada al elemento en el paso 5 de la iteración correspondiente.]
+[Texto del requerimiento funcional, copiado del listado de drivers.]
+
+## Drivers que guían el cómo
+
+El `REF` de esta spec es el requerimiento. Cada viñeta es un `QA` o `CON` que una iteración ata a esa funcionalidad: qué restringe de la implementación, y dónde se los nombra juntos.
+
+* **`[QA-… / CON-…]`:** [Restricción de implementación]. *(Origen: `RONDA_X/ITERACION_N.md`)*
+
+## Conceptos de diseño aceptados
+
+Una viñeta por táctica que quedó. Solo ADR en estado `aceptado`. La oración de restricción se copia del resultado de ese ADR.
+
+* **`[Nombre del concepto]`** (`ADR-…`): [Restricción de implementación, copiada del resultado del ADR].
 
 ## Relaciones Permitidas
 
@@ -38,7 +50,7 @@
 
 | ID | Dado (Given) | Cuando (When) | Entonces (Then) | Driver / ADR | Verificación |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| `AC-<AREA>-<NN>-01` | `[Contexto inicial]` | `[Estímulo / Acción]` | `[Resultado esperado y medible]` | `[QA-... / REF-... / ADR-...]` | `[Test automático / Carga / Demo]` |
+| `AC-REF-<NN>-01` | `[Contexto inicial]` | `[Estímulo / Acción]` | `[Resultado esperado y medible]` | `[QA-... / REF-... / ADR-...]` | `[Test automático / Carga / Demo]` |
 
 ## Parámetros Configurables (Valores de Prototipo)
 
