@@ -4,7 +4,8 @@
 # DRIVERS: QA-EVO-01, REF-01
 """Tipos concretos de reserva: hotel, auto, vuelo, tren y autobús.
 
-La spec solo fija los campos comunes de `Reserva`; estas clases no agregan campos.
+La spec solo fija los campos comunes de `Reserva`. El único campo propio es `codigo` (el
+código de reserva que trae el correo, SPEC-REF-03), que viaja en la columna `datos`.
 Un medio nuevo es una clase más que extiende `Reserva` y se registra al arrancar.
 """
 from __future__ import annotations
@@ -16,6 +17,7 @@ from trotamundos.dominio.reserva import Reserva
 
 class _ReservaConEtiqueta(Reserva):
     etiqueta: ClassVar[str] = "Reserva"
+    codigo: str | None = None
 
     def resumen(self) -> str:
         destino = f" en {self.lugar}" if self.lugar else ""

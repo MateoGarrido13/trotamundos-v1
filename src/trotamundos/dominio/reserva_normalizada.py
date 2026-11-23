@@ -23,3 +23,9 @@ class ReservaNormalizada(BaseModel):
     fin: datetime
     lugar: str
     codigo: str
+
+    @property
+    def identificador_reserva(self) -> str:
+        """Identificador de la `Reserva` que se crea a partir de este mensaje. El mismo correo
+        enviado a dos titulares comparte `Message-ID`, así que incluye al titular."""
+        return f"{self.titular_id}:{self.id_mensaje}"

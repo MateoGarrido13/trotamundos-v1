@@ -45,6 +45,24 @@ class RepositorioViajes:
             (reserva.identificador, reserva.viaje_id, tipo, reserva.inicio, reserva.fin,
              reserva.estado.value, reserva.lugar, Jsonb(datos))))
 
+    def incorporar_reserva(self, viajero_id: str, reserva: Reserva) -> None:
+        """Escribe el viaje y la reserva en una sola escritura de dos fases. Es idempotente:
+        si el viaje o la reserva ya existen no hace nada (una entrega repetida tras un timeout
+        no falla ni duplica). Es la entrada de las reservas que llegan por la ingesta; las
+        operaciones manuales con permisos son de SPEC-REF-04."""
+        tipo = self._nombre_de_tipo(type(reserva))
+        datos = Jsonb(reserva.model_dump(mode="json", exclude=CAMPOS_COMUNES))
+
+        def op(c):
+            c.execute("INSERT INTO viaje (id, viajero_id) VALUES (%s, %s) ON CONFLICT DO NOTHING",
+                      (reserva.viaje_id, viajero_id))
+            c.execute(
+                "INSERT INTO reserva (identificador, viaje_id, tipo, inicio, fin, estado, lugar, datos)"
+                " VALUES (%s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING",
+                (reserva.identificador, reserva.viaje_id, tipo, reserva.inicio, reserva.fin,
+                 reserva.estado.value, reserva.lugar, datos))
+        self._base.escribir(op)
+
     def archivar(self, viaje_ids: list[str], ahora: datetime) -> None:
         if not viaje_ids:
             return

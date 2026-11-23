@@ -28,6 +28,9 @@ PROHIBIDOS = [
     ("entrada/programador_sondeo", "trotamundos.persistencia", "solo el Gestor accede a la base"),
     ("entrada/consumidor_correo", "trotamundos.persistencia", "solo el Gestor accede a la base"),
     ("entrada/app", "trotamundos.orquestador", "ADR-IT3-010: nodos de entrada separados"),
+    ("entrada/filtro_remitentes", "trotamundos.persistencia", "el filtro no guarda nada ni escribe la reserva"),
+    ("entrada/ingesta", "trotamundos.persistencia", "la ingesta nunca escribe en la base: entrega al Orquestador"),
+    ("dominio/puertos_correo", "trotamundos.config", "los puertos solo dependen del dominio"),
 ]
 
 
