@@ -39,6 +39,17 @@ class ConfiguracionBases:
 
 
 @dataclass(frozen=True)
+class ConfiguracionCorreo:
+    # SPEC-REF-02, «Parámetros Configurables».
+    frecuencia_sondeo_minutos: int = int(_env("TROTA_SONDEO_MINUTOS", "15"))
+    ventana_sondeo_dias: int = int(_env("TROTA_VENTANA_DIAS", "7"))
+    vigencia_token_minutos: int = int(_env("TROTA_VIGENCIA_TOKEN_MINUTOS", "60"))
+    # Simplificación de la spec: la clave de cifrado de tokens sale de una variable de entorno.
+    clave_tokens: str = _env("TROTA_CLAVE_TOKENS", "")
+
+
+@dataclass(frozen=True)
 class Configuracion:
+    correo: ConfiguracionCorreo = field(default_factory=ConfiguracionCorreo)
     broker: ConfiguracionBroker = field(default_factory=ConfiguracionBroker)
     bases: ConfiguracionBases = field(default_factory=ConfiguracionBases)

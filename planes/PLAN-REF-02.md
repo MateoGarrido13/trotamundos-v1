@@ -26,6 +26,13 @@ Parte del esqueleto compartido ya construido: `Broker` (cola `correo`, acotada, 
 | Mensaje enviado al Parseo | `id`, `titular_id`, `remitente` y cuerpo crudo. **Nunca el token** | El Parseo no tiene token | No |
 | Entrega tras el parseo | `ConsumidorCorreo` toma de la cola `correo`, parsea y llama a `FiltroRemitentes.recibir`. Si algo falla lanza la excepción y el Broker reintenta (1 s, 2 s, 4 s) y luego va a mensajes muertos | ADR-IT3-002, ADR-IT3-003 | No |
 | Contrato con REF-03 | Hasta que exista SPEC-REF-03 se usa `FiltroRemitentesNulo` | Esta spec termina antes del Filtro | No |
+| Endpoints de autorización | `POST /correo/autorizacion` con `{"token": ...}` y `X-Titular-Id` (201 con el vencimiento); `DELETE` idempotente (204); sin `X-Titular-Id`, 401 | La spec no dice de dónde sale el token | No |
+| Resultado de sondeo | `sondear` devuelve `ResultadoSondeo(leyo, publicados, cola_llena)`; la API caída lanza `ErrorApiCorreo`, que `tick` captura por titular | Una caída o una cola llena no afectan a los demás titulares | No |
+| Programador | `tick(ahora)` sondea siempre a todos los titulares con token guardado, sin chequear el intervalo; `ejecutar()` duerme 15 min entre ticks | Los tests no esperan tiempo real | No |
+| Mensaje en la cola de correo | `Mensaje(id, {titular_id, remitente, cuerpo})`; nunca el token | ADR-IT3-007 | No |
+| Hash sin `Message-ID` | SHA-256 del cuerpo crudo | ADR-IT3-003 | No |
+| Validación del Parseo | JSON con exactamente `tipo`, `inicio`, `fin`, `lugar`, `codigo` (`extra="forbid"`); textos de 1 a 200 caracteres, sin caracteres de control (también acota `id`, `titular_id` y `remitente`); `fin` posterior a `inicio`; cuerpo de hasta 64 KB | Concreta «contenido malicioso» de `AC-REF-02-04` | No |
+| Descarte del Parseo | El Consumidor lo da por entregado, sin Retry ni mensajes muertos; si el proceso falla o muere, lanza error y el Broker reintenta; el cliente reinicia el proceso | Regla 11 de la spec | No |
 
 ## Estructura de Código y Mapeo Arquitectónico
 
@@ -60,16 +67,16 @@ Ajuste al test de arquitectura (`tests/test_arquitectura.py`): agregar la prohib
 
 | Criterio de Aceptación (Spec) | Tarea(s) del Plan | Nombre del test automatizado | Estado |
 | :--- | :--- | :--- | :--- |
-| `AC-REF-02-01` | `T-REF-02-02`, `T-REF-02-04`, `T-REF-02-08` | `test_AC_REF_02_01_sin_autorizacion_o_revocado_el_adaptador_no_lee` | `[ ] Pendiente` |
-| `AC-REF-02-07` | `T-REF-02-01`, `T-REF-02-02`, `T-REF-02-04` | `test_AC_REF_02_07_token_vencido_no_lee_y_exige_reautorizar` | `[ ] Pendiente` |
-| `AC-REF-02-02` | `T-REF-02-03`, `T-REF-02-04` | `test_AC_REF_02_02_sondeo_publica_con_message_id_o_hash` | `[ ] Pendiente` |
-| `AC-REF-02-03` | `T-REF-02-04` | `test_AC_REF_02_03_cola_llena_no_publica_no_pierde_y_reintenta_en_el_siguiente_sondeo` | `[ ] Pendiente` |
-| `AC-REF-02-04` | `T-REF-02-06` | `test_AC_REF_02_04_parseo_descarta_invalidos_y_maliciosos` | `[ ] Pendiente` |
-| `AC-REF-02-08` | `T-REF-02-06` | `test_AC_REF_02_08_proceso_de_parseo_sin_credenciales_ni_token` | `[ ] Pendiente` |
-| `AC-REF-02-09` | `T-REF-02-05` | `test_AC_REF_02_09_dos_sondeos_publican_el_mismo_identificador` | `[ ] Pendiente` |
-| `AC-REF-02-10` | `T-REF-02-07` | `test_AC_REF_02_10_reintentos_agotados_van_a_mensajes_muertos_con_aviso` | `[ ] Pendiente` |
-| `AC-REF-02-05` | `T-REF-02-06`, `T-REF-02-07` | `test_AC_REF_02_05_reserva_valida_llega_al_filtro_con_su_identificador` | `[ ] Pendiente` |
-| `AC-REF-02-06` | `T-REF-02-08`, `T-REF-02-09` | `test_AC_REF_02_06_revocar_deja_de_leer_y_conserva_la_reserva_incorporada` | `[ ] Pendiente` |
+| `AC-REF-02-01` | `T-REF-02-02`, `T-REF-02-04`, `T-REF-02-08` | `test_AC_REF_02_01_sin_autorizacion_o_revocado_el_adaptador_no_lee` | `[x] Verde` |
+| `AC-REF-02-07` | `T-REF-02-01`, `T-REF-02-02`, `T-REF-02-04` | `test_AC_REF_02_07_token_vencido_no_lee_y_exige_reautorizar` | `[x] Verde` |
+| `AC-REF-02-02` | `T-REF-02-03`, `T-REF-02-04` | `test_AC_REF_02_02_sondeo_publica_con_message_id_o_hash` | `[x] Verde` |
+| `AC-REF-02-03` | `T-REF-02-04` | `test_AC_REF_02_03_cola_llena_no_publica_no_pierde_y_reintenta_en_el_siguiente_sondeo` | `[x] Verde` |
+| `AC-REF-02-04` | `T-REF-02-06` | `test_AC_REF_02_04_parseo_descarta_invalidos_y_maliciosos` | `[x] Verde` |
+| `AC-REF-02-08` | `T-REF-02-06` | `test_AC_REF_02_08_proceso_de_parseo_sin_credenciales_ni_token` | `[x] Verde` |
+| `AC-REF-02-09` | `T-REF-02-05` | `test_AC_REF_02_09_dos_sondeos_publican_el_mismo_identificador` | `[x] Verde` |
+| `AC-REF-02-10` | `T-REF-02-07` | `test_AC_REF_02_10_reintentos_agotados_van_a_mensajes_muertos_con_aviso` | `[x] Verde` |
+| `AC-REF-02-05` | `T-REF-02-06`, `T-REF-02-07` | `test_AC_REF_02_05_reserva_valida_llega_al_filtro_con_su_identificador` | `[x] Verde` |
+| `AC-REF-02-06` | `T-REF-02-08`, `T-REF-02-09` | `test_AC_REF_02_06_revocar_deja_de_leer_y_conserva_la_reserva_incorporada` | `[ ] Pendiente` (revocación cubierta por T-REF-02-08; falta T-REF-02-09) |
 
 ## Estrategia de Pruebas y Simulación de Fallos
 
@@ -88,5 +95,5 @@ Ajuste al test de arquitectura (`tests/test_arquitectura.py`): agregar la prohib
 * **`/proc/<pid>/environ` solo existe en Linux.** Mitigación: el entorno de desarrollo es Linux; el test se salta con un mensaje explícito si no hay `/proc`.
 * **Procesos hijo que quedan vivos si un test falla.** Mitigación: el cliente del Parseo se cierra en `finally` y en una fixture, con *timeout* de arranque.
 * **`SUPUESTO` de `remitente` y `titular_id` en `ReservaNormalizada`.** Mitigación: ya decidido en el esqueleto; conviene reflejarlo en SPEC-REF-02/03 en la próxima revisión.
-* **Tope de 64 KB del correo crudo.** La spec no lo fija; es un valor de prototipo para cubrir «contenido malicioso». Se confirma con `OK PLAN`.
+* **Tope de 64 KB del correo crudo.** Valor de prototipo confirmado con `OK PLAN` y fijado en la spec, junto con el tope de 200 caracteres por campo.
 * **Conflicto en `pyproject.toml` y `tests/test_arquitectura.py` al integrar con REF-01.** Mitigación: cambios aditivos y de pocas líneas; se resuelven en el merge.
