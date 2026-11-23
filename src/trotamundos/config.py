@@ -91,6 +91,53 @@ class ConfiguracionAgencias:
 
 
 @dataclass(frozen=True)
+class ConfiguracionAnalitica:
+    # SPEC-REF-06, «Parámetros Configurables».
+    dsn: str = _env("TROTA_DSN_ANALITICA", "postgresql://trotamundos:trotamundos@localhost:5435/analitica")
+    # Tamaño máximo de la quinta cola: 1.000 eventos (5 en los tests).
+    tamano_cola_eventos: int = int(_env("TROTA_COLA_EVENTOS_MAX", "1000"))
+    # Reintentos de la publicación del Orquestador: 1 s, 2 s y 4 s.
+    reintentos_publicacion: int = int(_env("TROTA_REINTENTOS_EVENTOS", "3"))
+    backoff_publicacion_segundos: float = float(_env("TROTA_BACKOFF_EVENTOS", "1.0"))
+    # Cota del informe: 10 segundos.
+    cota_informe_segundos: float = float(_env("TROTA_COTA_INFORME", "10"))
+    # Cuentas autorizadas del equipo de datos (simplificación de la spec: lista en la configuración).
+    cuentas_datos: tuple[str, ...] = tuple(
+        c.strip() for c in _env("TROTA_CUENTAS_DATOS", "analista").split(",") if c.strip())
+
+
+@dataclass(frozen=True)
+class ConfiguracionAsistente:
+    """SPEC-REF-07, «Parámetros Configurables». No tiene credenciales de ninguna base ni de la
+    API de la agencia: el Asistente solo habla con el Orquestador por su interfaz interna."""
+
+    cota_turno_segundos: float = float(_env("TROTA_COTA_ASISTENTE", "35"))
+    timeout_motor_segundos: float = float(_env("TROTA_TIMEOUT_MOTOR", "20"))
+    umbral_circuito: int = int(_env("TROTA_UMBRAL_CIRCUITO", "5"))
+    apertura_circuito_segundos: float = float(_env("TROTA_APERTURA_CIRCUITO", "30"))
+    # Reduce proporcionalmente la cota, el time-out y la apertura del circuito, para que las pruebas
+    # no esperen los valores reales. La demostración usa 1.
+    escala_tiempos: float = float(_env("TROTA_ESCALA_TIEMPOS", "1"))
+    vigencia_contexto_minutos: float = float(_env("TROTA_VIGENCIA_CONTEXTO", "30"))
+    largo_maximo_mensaje: int = int(_env("TROTA_LARGO_MENSAJE", "500"))
+    mensajes_resumen: int = int(_env("TROTA_MENSAJES_RESUMEN", "5"))
+    # Simplificación de la spec: la clave que firma el contexto sale de una variable de entorno.
+    clave_contexto: str = _env("TROTA_CLAVE_ASISTENTE", "")
+
+    @property
+    def cota_turno(self) -> float:
+        return self.cota_turno_segundos * self.escala_tiempos
+
+    @property
+    def timeout_motor(self) -> float:
+        return self.timeout_motor_segundos * self.escala_tiempos
+
+    @property
+    def apertura_circuito(self) -> float:
+        return self.apertura_circuito_segundos * self.escala_tiempos
+
+
+@dataclass(frozen=True)
 class Configuracion:
     correo: ConfiguracionCorreo = field(default_factory=ConfiguracionCorreo)
     broker: ConfiguracionBroker = field(default_factory=ConfiguracionBroker)
@@ -99,6 +146,8 @@ class Configuracion:
     ingesta: ConfiguracionIngesta = field(default_factory=ConfiguracionIngesta)
     gestion: ConfiguracionGestion = field(default_factory=ConfiguracionGestion)
     agencias: ConfiguracionAgencias = field(default_factory=ConfiguracionAgencias)
+    analitica: ConfiguracionAnalitica = field(default_factory=ConfiguracionAnalitica)
+    asistente: ConfiguracionAsistente = field(default_factory=ConfiguracionAsistente)
 
     def __post_init__(self) -> None:
         # Ninguna retención puede ser menor que la ventana de sondeo (SPEC-REF-02/03): si lo

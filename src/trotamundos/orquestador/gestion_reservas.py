@@ -31,6 +31,7 @@ from trotamundos.config import ConfiguracionGestion
 from trotamundos.dominio.registro_tipos import ErrorRegistroTipos, RegistroTipos
 from trotamundos.dominio.reserva import Origen, Reserva
 from trotamundos.orquestador.agrupacion import Agrupacion, ViajeAgrupado
+from trotamundos.orquestador.eventos_analiticos import EmisorEventos
 from trotamundos.orquestador.control_acceso import (
     Decision,
     ModuloControlAcceso,
@@ -69,9 +70,11 @@ class RespuestaOperacion:
     motivo: str | None = None  # "no_existe" | "en_baja" | "tipo_no_registrado" | "campos_invalidos"
     reserva: dict | None = None
     repetida: bool = False  # el resultado es el de una operación anterior con la misma clave
+    # Datos del evento analítico (SPEC-REF-06). No se guarda con la clave: una operación repetida no publica otro.
+    evento: dict | None = None
 
     def a_dict(self) -> dict:
-        return {k: v for k, v in asdict(self).items() if k != "repetida"}
+        return {k: v for k, v in asdict(self).items() if k not in ("repetida", "evento")}
 
     @classmethod
     def repetida_de(cls, guardado: dict) -> RespuestaOperacion:
@@ -129,6 +132,7 @@ class GestionReservas:
         *,
         reloj: Callable[[], datetime] = _ahora_utc,
         gancho_fallo: Callable[[], None] | None = None,
+        emisor: EmisorEventos | None = None,
     ) -> None:
         self._base = base
         self._registro = registro
@@ -138,27 +142,34 @@ class GestionReservas:
         # Solo para pruebas: se ejecuta dentro de la transacción, entre la reserva y el asiento.
         self._gancho_fallo = gancho_fallo
         self._fuente = _FuenteItinerario(base, repositorio_viajes)
+        self._emisor = emisor  # SPEC-REF-06: publica el evento analítico después del commit
 
     # --- operaciones -------------------------------------------------------------
     async def agregar(self, actor: str, itinerario_id: str, clave: str,
                       solicitud: SolicitudReserva) -> RespuestaOperacion:
         ident, ahora = f"res-{uuid.uuid4().hex}", self._reloj()  # una vez: la operación corre en las dos bases
-        return await asyncio.to_thread(
+        respuesta = await asyncio.to_thread(
             self._escribir, lambda c: self._agregar(c, actor, itinerario_id, clave, solicitud, ident, ahora))
+        self._emitir(respuesta, ahora)
+        return respuesta
 
     async def actualizar(self, actor: str, itinerario_id: str, reserva_id: str, clave: str,
                          cambios: dict[str, Any]) -> RespuestaOperacion:
         ahora = self._reloj()
-        return await asyncio.to_thread(
+        respuesta = await asyncio.to_thread(
             self._escribir, lambda c: self._modificar(
                 c, "actualizar", actor, itinerario_id, reserva_id, clave, cambios, ahora))
+        self._emitir(respuesta, ahora)
+        return respuesta
 
     async def eliminar(self, actor: str, itinerario_id: str, reserva_id: str,
                        clave: str) -> RespuestaOperacion:
         ahora = self._reloj()
-        return await asyncio.to_thread(
+        respuesta = await asyncio.to_thread(
             self._escribir, lambda c: self._modificar(
                 c, "eliminar", actor, itinerario_id, reserva_id, clave, None, ahora))
+        self._emitir(respuesta, ahora)
+        return respuesta
 
     async def vista(self, actor: str, itinerario_id: str) -> list[ViajeAgrupado]:
         """Las reservas vigentes del itinerario, agrupadas por viaje. Cualquier miembro con
@@ -208,8 +219,12 @@ class GestionReservas:
         if itin_del_viaje is None:
             RepositorioGestion.crear_viaje(c, s.viaje_id, actor, itin)
         RepositorioGestion.insertar_reserva(c, reserva, s.tipo)
-        return self._confirmar(c, "agregar", Permiso.REGISTRAR, actor, itin, clave, ahora,
-                               ident, {"tipo": s.tipo, **reserva.model_dump(mode="json")})
+        return self._confirmar(
+            c, "agregar", Permiso.REGISTRAR, actor, itin, clave, ahora, ident,
+            {"tipo": s.tipo, **reserva.model_dump(mode="json")},
+            evento={"tipo": "alta", "tipo_reserva": s.tipo, "destino": reserva.lugar,
+                    "inicio": reserva.inicio, "fin": reserva.fin, "origen": reserva.origen.value,
+                    "estado": reserva.estado.value})
 
     def _modificar(self, c: psycopg.Connection, operacion: str, actor: str, itin: str,
                    reserva_id: str, clave: str, cambios: dict | None,
@@ -230,6 +245,8 @@ class GestionReservas:
         if operacion == "eliminar":
             RepositorioGestion.dar_de_baja(c, reserva_id, ahora)
             cuerpo: dict = {"identificador": reserva_id, "baja_en": ahora.isoformat()}
+            evento = {"tipo": "baja", "tipo_reserva": fila.tipo, "destino": fila.lugar,
+                      "inicio": fila.inicio, "fin": fila.fin, "origen": fila.origen, "estado": fila.estado}
         else:
             try:
                 if not cambios:
@@ -240,7 +257,11 @@ class GestionReservas:
                                       "campos_invalidos", reserva_id)
             RepositorioGestion.actualizar_reserva(c, reserva)  # queda marcada como editada a mano
             cuerpo = {"tipo": fila.tipo, **reserva.model_dump(mode="json"), "editada_manualmente": True}
-        return self._confirmar(c, operacion, Permiso.MODIFICAR, actor, itin, clave, ahora, reserva_id, cuerpo)
+            evento = {"tipo": "modificacion", "tipo_reserva": fila.tipo, "destino": reserva.lugar,
+                      "inicio": reserva.inicio, "fin": reserva.fin, "origen": fila.origen,
+                      "estado": reserva.estado.value}
+        return self._confirmar(c, operacion, Permiso.MODIFICAR, actor, itin, clave, ahora, reserva_id,
+                               cuerpo, evento=evento)
 
     def _previo(self, c, operacion, permiso, actor, itin, clave, ahora, reserva_id=None):
         """Permiso y clave de operación. Devuelve una `RespuestaOperacion` si ya se resolvió
@@ -261,11 +282,17 @@ class GestionReservas:
         self._auditar(c, operacion, permiso, actor, itin, "rechazado", ahora, reserva_id, clave, motivo)
         return RespuestaOperacion("rechazado", operacion, motivo)
 
-    def _confirmar(self, c, operacion, permiso, actor, itin, clave, ahora, reserva_id, cuerpo):
+    def _emitir(self, respuesta: RespuestaOperacion, ahora: datetime) -> None:
+        """Publica el evento analítico **después** del commit y sin esperar. Una operación
+        repetida (la clave ya se aplicó) no publica otro."""
+        if self._emisor and respuesta.estado == "ok" and not respuesta.repetida and respuesta.evento:
+            self._emisor.emitir(respuesta.evento, ahora)
+
+    def _confirmar(self, c, operacion, permiso, actor, itin, clave, ahora, reserva_id, cuerpo, evento=None):
         if self._gancho_fallo:
             self._gancho_fallo()
         self._auditar(c, operacion, permiso, actor, itin, "permitido", ahora, reserva_id, clave)
-        respuesta = RespuestaOperacion("ok", operacion, reserva=cuerpo)
+        respuesta = RespuestaOperacion("ok", operacion, reserva=cuerpo, evento=evento)
         RepositorioGestion.guardar_clave(c, actor, clave, respuesta.a_dict(), ahora)
         return respuesta
 

@@ -32,4 +32,5 @@ asyncio_default_fixture_loop_scope = "function"
 pythonpath = ["src"]
 markers = [
     "db: requiere las bases PostgreSQL de docker-compose levantadas",
+    "carga: prueba de carga (un millón de eventos); se corre en la suite completa",
 ]

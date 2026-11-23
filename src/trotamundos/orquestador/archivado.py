@@ -30,12 +30,23 @@ def archivar_completados(repositorio: FuenteArchivado, ahora: datetime) -> list[
     return ids
 
 
+async def archivar_y_emitir(repositorio: FuenteArchivado, ahora: datetime, emisor=None) -> list[str]:
+    """Archiva y, después del commit, publica un evento por cada viaje archivado (SPEC-REF-06).
+    El viaje no tiene un único destino ni tipo: el evento va sin esos campos."""
+    ids = await asyncio.to_thread(archivar_completados, repositorio, ahora)
+    if emisor:
+        for _ in ids:  # el evento no lleva el identificador del viaje
+            emisor.emitir({"tipo": "archivado"}, ahora)
+    return ids
+
+
 async def tarea_periodica(repositorio: FuenteArchivado,
                           intervalo_segundos: float = INTERVALO_POR_DEFECTO,
-                          reloj: Callable[[], datetime] = datetime.now) -> None:
+                          reloj: Callable[[], datetime] = datetime.now,
+                          emisor=None) -> None:
     while True:
         try:
-            await asyncio.to_thread(archivar_completados, repositorio, reloj())
+            await archivar_y_emitir(repositorio, reloj(), emisor)
         except Exception:  # una base caída no mata el proceso periódico
             log.exception("falló el archivado periódico")
         await asyncio.sleep(intervalo_segundos)

@@ -23,6 +23,7 @@ from pydantic import ValidationError
 
 from trotamundos.dominio.registro_tipos import ErrorRegistroTipos, RegistroTipos
 from trotamundos.orquestador.control_acceso import Decision, ModuloControlAcceso, Permiso
+from trotamundos.orquestador.eventos_analiticos import EmisorEventos
 from trotamundos.orquestador.gestion_reservas import (
     EDITABLES_COMUNES,
     AccesoDenegado,
@@ -47,16 +48,21 @@ def _ahora_utc() -> datetime:
 class ServicioNovedades:
     def __init__(self, base: BaseViajes, registro: RegistroTipos,
                  acceso: ModuloControlAcceso | None = None, *,
-                 reloj: Callable[[], datetime] = _ahora_utc) -> None:
+                 reloj: Callable[[], datetime] = _ahora_utc,
+                 emisor: EmisorEventos | None = None) -> None:
         self._base, self._registro = base, registro
+        self._emisor = emisor  # SPEC-REF-06: una novedad aplicada es una modificación
         self._acceso = acceso or ModuloControlAcceso()
         self._reloj = reloj
 
     async def aplicar(self, novedad: NovedadProveedor) -> str:
         """`aplicada`, `retenida` (queda en «Novedades»), `duplicada` o `no_existe`."""
         ahora = self._reloj()
-        return await asyncio.to_thread(
+        resultado, evento = await asyncio.to_thread(
             self._base.escribir, lambda c: self._aplicar(c, novedad, ahora))
+        if evento and self._emisor:
+            self._emisor.emitir(evento, ahora)
+        return resultado
 
     async def pendientes(self, actor: str, itinerario_id: str) -> list[FilaNovedad]:
         """Las novedades que esperan la decisión del viajero. Requiere permiso de ver."""
@@ -69,28 +75,30 @@ class ServicioNovedades:
             raise AccesoDenegado(f"{actor} no puede ver el itinerario {itinerario_id}")
         return pendientes
 
-    def _aplicar(self, c: psycopg.Connection, n: NovedadProveedor, ahora: datetime) -> str:
+    def _aplicar(self, c: psycopg.Connection, n: NovedadProveedor, ahora: datetime) -> tuple[str, dict | None]:
         fila = RepositorioGestion.reserva(c, n.reserva_id)
         if fila is None:
-            return "no_existe"
+            return "no_existe", None
         if RepositorioGestion.novedad_existe(c, n.id):
-            return "duplicada"
+            return "duplicada", None
         registrar = lambda estado: RepositorioGestion.insertar_novedad(  # noqa: E731
             c, novedad_id=n.id, itinerario_id=fila.itinerario_id, reserva_id=n.reserva_id,
             proveedor=n.proveedor, cambios=_serializable(n.cambios), estado=estado, ahora=ahora)
         if fila.editada_manualmente or fila.baja_en is not None:
             registrar("pendiente")  # la edición manual tiene precedencia
-            return "retenida"
+            return "retenida", None
         try:
             if set(n.cambios) - EDITABLES_COMUNES:
                 raise ValueError("la novedad trae campos que no se pueden aplicar")
             nueva = reconstruir(self._registro, fila, n.cambios)
         except (ValidationError, ValueError, TypeError, ErrorRegistroTipos):
             registrar("pendiente")  # no se puede aplicar sola: la decide el viajero
-            return "retenida"
+            return "retenida", None
         RepositorioGestion.actualizar_reserva(c, nueva, marcar_editada=False)
         registrar("aplicada")
-        return "aplicada"
+        return "aplicada", {"tipo": "modificacion", "tipo_reserva": fila.tipo, "destino": nueva.lugar,
+                            "inicio": nueva.inicio, "fin": nueva.fin, "origen": fila.origen,
+                            "estado": nueva.estado.value}
 
 
 def _serializable(cambios: dict[str, Any]) -> dict[str, Any]:

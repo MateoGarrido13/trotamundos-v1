@@ -7,7 +7,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from trotamundos.broker import Broker
+from trotamundos.broker import Broker, NombreCola
 from trotamundos.config import Configuracion
 from trotamundos.dominio.registro_tipos import RegistroTipos
 from trotamundos.composicion import ensamblar_agencias, ensamblar_correo
@@ -16,6 +16,7 @@ from trotamundos.orquestador import api_casos, api_gestion, api_revision
 from trotamundos.orquestador.archivado import tarea_periodica
 from trotamundos.orquestador.arranque import registrar_tipos
 from trotamundos.orquestador.casos import ServicioCasos
+from trotamundos.orquestador.eventos_analiticos import EmisorEventos
 from trotamundos.orquestador.gestion_reservas import GestionReservas, tarea_purga_claves
 from trotamundos.orquestador.incorporacion import IncorporadorReservas
 from trotamundos.orquestador.novedades import ServicioNovedades
@@ -33,18 +34,19 @@ def create_app(configuracion: Configuracion | None = None,
     registrar_tipos(registro, tipos_extra)
     base_viajes = BaseViajes.desde_config(cfg.bases)
     repositorio = RepositorioViajes(base_viajes, registro)
-    gestion = GestionReservas(base_viajes, registro, repositorio, configuracion=cfg.gestion)
-    broker = Broker(cfg.broker)
+    broker = Broker(cfg.broker, tamanos={NombreCola.EVENTOS_ANALITICOS: cfg.analitica.tamano_cola_eventos})
+    emisor = EmisorEventos(broker, cfg.analitica)  # SPEC-REF-06: eventos anonimizados tras cada commit
+    gestion = GestionReservas(base_viajes, registro, repositorio, configuracion=cfg.gestion, emisor=emisor)
     casos = ServicioCasos(base_viajes, broker, cfg.agencias.disponibles, cfg.agencias)
     servicio_revision = ServicioRevision(
         RepositorioRevision(base_viajes, cfg.revision.tope_pendientes), cfg.revision)
     nodos_correo = ensamblar_correo(
-        broker, servicio_revision, IncorporadorReservas(repositorio, registro), cfg.ingesta,
+        broker, servicio_revision, IncorporadorReservas(repositorio, registro, emisor), cfg.ingesta,
         entrega_casos=casos)
 
     @asynccontextmanager
     async def ciclo_de_vida(_: FastAPI):
-        tareas = [asyncio.create_task(tarea_periodica(repositorio)),
+        tareas = [asyncio.create_task(tarea_periodica(repositorio, emisor=emisor)),
                   asyncio.create_task(tarea_purga(servicio_revision, cfg.revision.intervalo_purga_segundos)),
                   asyncio.create_task(tarea_purga_claves(gestion, cfg.revision.intervalo_purga_segundos))]
         try:
@@ -63,7 +65,8 @@ def create_app(configuracion: Configuracion | None = None,
     app.state.gestion = gestion
     app.state.casos = casos
     app.state.adaptador_agencia = ensamblar_agencias(broker, cfg.agencias)
-    app.state.novedades = ServicioNovedades(base_viajes, registro)
+    app.state.novedades = ServicioNovedades(base_viajes, registro, emisor=emisor)
+    app.state.emisor_eventos = emisor
     app.state.nodos_correo = nodos_correo
     app.include_router(api_viajes.router)
     app.include_router(api_revision.router)

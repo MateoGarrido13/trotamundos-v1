@@ -27,6 +27,22 @@ def cfg_broker():
     return ConfiguracionBroker(tamano_maximo_cola=5, reintentos=3, backoff_base_segundos=1.0)
 
 
+# --- Base analítica (SPEC-REF-06) ---------------------------------------------------
+from trotamundos.analitica.base import aplicar_esquema as aplicar_esquema_analitico  # noqa: E402
+from trotamundos.analitica.base import conectar as conectar_analitica  # noqa: E402
+from trotamundos.config import ConfiguracionAnalitica  # noqa: E402
+
+
+@pytest.fixture
+def analitica_limpia():
+    """La Base analítica con las tablas recreadas; devuelve su configuración."""
+    cfg = ConfiguracionAnalitica()
+    with conectar_analitica(cfg.dsn, autocommit=True) as conn:
+        conn.execute("DROP TABLE IF EXISTS evento, contador CASCADE")
+        aplicar_esquema_analitico(conn)
+    return cfg
+
+
 # --- Bases de viajes (SPEC-REF-01) -------------------------------------------------
 from trotamundos.config import ConfiguracionBases  # noqa: E402
 from trotamundos.persistencia.conexion import conectar  # noqa: E402

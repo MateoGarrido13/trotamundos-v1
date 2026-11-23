@@ -40,6 +40,21 @@ PROHIBIDOS = [
     ("orquestador/casos", "trotamundos.entrada", "el Orquestador solo conoce los nombres de las agencias"),
     ("dominio/agencias", "trotamundos.config", "el dominio no depende de nadie"),
     ("dominio/puertos_casos", "trotamundos.broker", "los puertos solo dependen del dominio"),
+    ("analitica", "trotamundos.orquestador", "el camino analítico no llama a nodos del Orquestador"),
+    ("analitica", "trotamundos.persistencia", "el camino analítico no lee la Base de viajes"),
+    ("analitica", "trotamundos.entrada", "nodos propios, sin compartir con la entrada"),
+    ("analitica", "trotamundos.asistente", "nodos propios"),
+    ("orquestador/eventos_analiticos", "trotamundos.analitica", "el Orquestador no escribe la Base analítica"),
+    ("orquestador", "trotamundos.analitica", "el Orquestador no escribe la Base analítica"),
+    ("dominio/eventos", "trotamundos.config", "el dominio no depende de nadie"),
+    ("asistente", "trotamundos.orquestador", "el Asistente solo conoce la interfaz interna del dominio"),
+    ("asistente", "trotamundos.persistencia", "el Asistente no lee ni escribe ninguna base"),
+    ("asistente", "trotamundos.entrada", "el Asistente no llama a la agencia"),
+    ("asistente", "trotamundos.broker", "el Asistente no toca las colas"),
+    ("asistente", "trotamundos.composicion", "solo la composición conecta al Asistente"),
+    ("orquestador/fachada_asistente", "trotamundos.asistente", "el Orquestador no conoce al Asistente"),
+    ("dominio/puertos_asistente", "trotamundos.config", "los puertos solo dependen del dominio"),
+    ("dominio/puertos_asistente", "trotamundos.orquestador", "los puertos solo dependen del dominio"),
 ]
 
 

@@ -83,6 +83,13 @@ class Broker:
             raise ColaLlena(cola)
         self._colas[cola].append(mensaje)
 
+    def enviar_a_muertos(self, cola: NombreCola, mensaje: Mensaje) -> None:
+        """Manda a la cola de mensajes muertos un mensaje que su **publicador** no pudo encolar
+        tras agotar sus reintentos (SPEC-REF-06), con aviso a operaciones. Es el mismo destino
+        que el de un mensaje que agota los reintentos de un consumidor."""
+        self._muertos[cola].append(mensaje)
+        self._avisar(Aviso("mensaje_muerto", cola, mensaje.id))
+
     # --- consumidores ----------------------------------------------------------
     async def procesar_uno(self, cola: NombreCola, handler: Handler) -> ResultadoEntrega:
         """Toma el siguiente mensaje y se lo entrega al handler.

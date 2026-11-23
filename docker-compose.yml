@@ -34,6 +34,23 @@ services:
       interval: 3s
       retries: 20
 
+  # Base analítica (SPEC-REF-06): instancia propia, distinta de las bases de viajes. No necesita
+  # transacciones preparadas: el Proyector escribe con una transacción común.
+  analitica:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: trotamundos
+      POSTGRES_PASSWORD: trotamundos
+      POSTGRES_DB: analitica
+    ports: ["5435:5432"]
+    volumes: ["analitica_data:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U trotamundos -d analitica"]
+      interval: 3s
+      retries: 20
+
 volumes:
   viajes_primaria_data:
   viajes_pasiva_data:
+  analitica_data:
