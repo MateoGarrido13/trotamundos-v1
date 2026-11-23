@@ -15,12 +15,20 @@ Parte del esqueleto compartido ya construido: `Reserva`, `RegistroTipos`, `Broke
 | Pertenencia del viaje | `viaje.viajero_id` (texto). La identidad llega «ya encaminada» por el header `X-Viajero-Id`, que simula al gateway | La autenticación es del Slice 1, sin spec en esta tanda | No |
 | Commit en dos fases | `PREPARE TRANSACTION` / `COMMIT PREPARED` de PostgreSQL sobre las dos bases. Orden: ejecutar en ambas, preparar la **pasiva primero** (su acuerdo), preparar la primaria y recién entonces confirmar | La primaria no confirma éxito hasta que la pasiva acuerda (ADR-IT2-004). `max_prepared_transactions=20` ya está en el compose | No |
 | Detección de caída | Error de conexión (`psycopg.OperationalError`) al escribir o leer, contado de forma consecutiva | Es el mecanismo que fija la spec | No |
-| Umbral de fallos consecutivos | `3`, configurable (`TROTA_UMBRAL_CONMUTACION`). **La spec lo deja `[sin especificar]`**: el valor es una propuesta de este plan, a confirmar con `OK PLAN` | Evitar conmutar por un fallo transitorio. Los tests lo fijan en `1` o `2` para ser rápidos | No (la spec lo declara parámetro) |
+| Umbral de fallos consecutivos | `3`, configurable (`TROTA_UMBRAL_CONMUTACION`). Valor confirmado con `OK PLAN` y fijado en la spec | Evitar conmutar por un fallo transitorio. Los tests lo fijan en `1` o `2` para ser rápidos | No (la spec lo declara parámetro) |
 | Tras conmutar | La primaria vieja queda marcada `no_escribible` hasta resincronización manual; la pasiva atiende sola, sin acuerdo de segunda copia | Evita *split-brain* (simplificación de la spec) | No |
 | Archivado periódico | Tarea `asyncio` que llama a `archivar_completados(ahora)`; la misma función se invoca a demanda en los tests, con un reloj inyectado | La spec pide «invocable a demanda en las pruebas» | No |
 | Viaje completo | Todas sus reservas tienen `fin <= ahora` (su última reserva ya terminó). Un viaje sin reservas no se archiva | Regla 2 de la spec | No |
 | Esquemas SQL | Carpeta `persistencia/esquemas/` con un `.sql` por spec (`01_viajes.sql`) y un cargador que los aplica en orden | Evita que REF-01 y REF-02 editen el mismo archivo y choquen al integrar | No |
 | Alta de viajes y reservas | El repositorio expone insertar viaje y reserva, **solo como base de escritura**. Las operaciones públicas `agregarReserva` / `actualizarReserva` / `eliminarReserva` son de SPEC-REF-04 | Los tests de REF-01 necesitan datos. El contrato manual con permisos y auditoría es de REF-04 | No |
+| Fallo por debajo del umbral | La llamada falla con `ErrorBaseNoDisponible` y no cae a la pasiva; cualquier éxito en la primaria reinicia el contador | Evita conmutar por un fallo transitorio | No |
+| Fallo de la pasiva en una escritura | Revierte ambas bases y lanza `ErrorBaseNoDisponible`; no cuenta como caída de la primaria | La caída de la primaria es lo único que dispara la conmutación | No |
+| Orden de confirmación | `COMMIT PREPARED` primero en la primaria y después en la pasiva (la pasiva prepara antes) | Cumple el acuerdo de la pasiva previo a la confirmación | No |
+| Conexiones | Autocommit con `BEGIN` explícito; `BaseViajes` no reintenta la operación fallida | El siguiente llamado ya va a la pasiva tras conmutar | No |
+| Intervalo del archivado | 3600 s, configurable (`TROTA_INTERVALO_ARCHIVADO`); la tarea periódica corre en el lifespan de FastAPI y captura errores | Una base caída no mata la tarea | No |
+| Viaje completo | Al menos una reserva y todas con `fin <= ahora`, incluidas las canceladas | Regla 2 de la spec | No |
+| Identidad ausente | Sin `X-Viajero-Id` el servicio responde 422 | Validación estándar de FastAPI | No |
+| Tipos concretos | Sin campos propios; `datos` (JSONB) vacío por ahora | La spec solo fija los campos comunes | No |
 
 ## Estructura de Código y Mapeo Arquitectónico
 
@@ -53,14 +61,14 @@ Parte del esqueleto compartido ya construido: `Reserva`, `RegistroTipos`, `Broke
 
 | Criterio de Aceptación (Spec) | Tarea(s) del Plan | Nombre del test automatizado | Estado |
 | :--- | :--- | :--- | :--- |
-| `AC-REF-01-01` | `T-REF-01-02`, `T-REF-01-05`, `T-REF-01-07` | `test_AC_REF_01_01_vista_principal_agrupa_reservas_por_viaje` | `[ ] Pendiente` |
-| `AC-REF-01-02` | `T-REF-01-06` | `test_AC_REF_01_02_archivado_saca_viaje_completo_de_vista_principal` | `[ ] Pendiente` |
-| `AC-REF-01-03` | `T-REF-01-01`, `T-REF-01-05` | `test_AC_REF_01_03_tipo_nuevo_queda_agrupado_sin_cambiar_agrupacion` | `[ ] Pendiente` |
-| `AC-REF-01-04` | `T-REF-01-03` | `test_AC_REF_01_04_pasiva_acuerda_antes_de_que_la_primaria_confirme` | `[ ] Pendiente` |
-| `AC-REF-01-05` | `T-REF-01-04` | `test_AC_REF_01_05_primaria_caida_atiende_la_pasiva` | `[ ] Pendiente` |
-| `AC-REF-01-06` | `T-REF-01-05`, `T-REF-01-07` | `test_AC_REF_01_06_archivados_devuelve_viajes_o_lista_vacia` | `[ ] Pendiente` |
-| `AC-REF-01-07` | `T-REF-01-05`, `T-REF-01-07` | `test_AC_REF_01_07_sin_viajes_activos_devuelve_lista_vacia` | `[ ] Pendiente` |
-| `AC-REF-01-08` | `T-REF-01-01` | `test_AC_REF_01_08_arranque_rechaza_tipo_duplicado_o_clase_invalida` | `[ ] Pendiente` |
+| `AC-REF-01-01` | `T-REF-01-02`, `T-REF-01-05`, `T-REF-01-07` | `test_AC_REF_01_01_vista_principal_agrupa_reservas_por_viaje` | `[x] Verde` |
+| `AC-REF-01-02` | `T-REF-01-06` | `test_AC_REF_01_02_archivado_saca_viaje_completo_de_vista_principal` | `[x] Verde` |
+| `AC-REF-01-03` | `T-REF-01-01`, `T-REF-01-05` | `test_AC_REF_01_03_tipo_nuevo_queda_agrupado_sin_cambiar_agrupacion` | `[x] Verde` |
+| `AC-REF-01-04` | `T-REF-01-03` | `test_AC_REF_01_04_pasiva_acuerda_antes_de_que_la_primaria_confirme` | `[x] Verde` |
+| `AC-REF-01-05` | `T-REF-01-04` | `test_AC_REF_01_05_primaria_caida_atiende_la_pasiva` | `[x] Verde` |
+| `AC-REF-01-06` | `T-REF-01-05`, `T-REF-01-07` | `test_AC_REF_01_06_archivados_devuelve_viajes_o_lista_vacia` | `[x] Verde` |
+| `AC-REF-01-07` | `T-REF-01-05`, `T-REF-01-07` | `test_AC_REF_01_07_sin_viajes_activos_devuelve_lista_vacia` | `[x] Verde` |
+| `AC-REF-01-08` | `T-REF-01-01` | `test_AC_REF_01_08_arranque_rechaza_tipo_duplicado_o_clase_invalida` | `[x] Verde` |
 
 ## Estrategia de Pruebas y Simulación de Fallos
 
@@ -75,5 +83,5 @@ Parte del esqueleto compartido ya construido: `Reserva`, `RegistroTipos`, `Broke
 * **`PREPARE TRANSACTION` deja transacciones colgadas si el proceso muere entre fases.** Mitigación: el coordinador revierte con `ROLLBACK PREPARED` ante cualquier excepción, y la fixture de tests limpia `pg_prepared_xacts`.
 * **Solapamiento con REF-02 en `persistencia/`.** REF-02 guarda tokens cifrados en la Base primaria de viajes. Mitigación: cada spec agrega su propio `.sql` en `esquemas/` y REF-02 consume `BaseViajes` recién tras integrar `T-REF-01-03`.
 * **Conflicto en `app.py` y `pyproject.toml` al integrar.** Mitigación: REF-02 monta sus rutas en una app de entrada separada; los cambios de REF-01 a `app.py` son acotados (registro de tipos y un router).
-* **Umbral de conmutación sin valor en la spec.** Mitigación: el valor `3` es configurable y queda sujeto a confirmación con `OK PLAN`.
+* **Umbral de conmutación.** Quedó fijado en `3`, configurable, en la spec y en este plan.
 * **Datos específicos de cada tipo de reserva.** La spec solo fija los campos comunes. Mitigación: las cinco clases concretas llevan los campos mínimos y no se agregan campos que la spec no pide.

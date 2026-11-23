@@ -42,7 +42,7 @@ El Orquestador de viajes agrupa las reservas por viaje y, cuando el viaje se com
 
 | Operación / Mensaje | Dirección / Protocolo | Entrada | Salida | Errores / Cota | Origen (ADR / Iteración) |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| Vista principal de un viajero | Síncrono, desde el cliente por el gateway | Identidad del viajero ya encaminada al Orquestador | Viajes que siguen en la vista principal, con sus reservas agrupadas | Sin viajes activos: lista vacía, no error. Sin ninguna base disponible: error de servicio no disponible. No se fija cota de tiempo, porque ningún driver la pide | [RONDA_1/ITERACION_1.md](../RONDA_1/ITERACION_1.md) |
+| Vista principal de un viajero | Síncrono, desde el cliente por el gateway | Identidad del viajero ya encaminada al Orquestador | Viajes que siguen en la vista principal, con sus reservas agrupadas | Sin viajes activos: lista vacía, no error. Sin ninguna base disponible: error de servicio no disponible. Si falta la identidad del viajero (encabezado `X-Viajero-Id`, que simula al gateway), el servicio responde 422. No se fija cota de tiempo, porque ningún driver la pide | [RONDA_1/ITERACION_1.md](../RONDA_1/ITERACION_1.md) |
 | Archivado automático del viaje completado | Interna al Orquestador, escritura en base. La dispara un proceso periódico por fecha (invocable a demanda en las pruebas) | Viaje cuya última reserva ya terminó | Viaje marcado como archivado y fuera de la vista principal | La escritura no confirma hasta el acuerdo de la pasiva | `ADR-IT2-004`, [RONDA_1/ITERACION_1.md](../RONDA_1/ITERACION_1.md) |
 | Viajes archivados de un viajero | Síncrono, desde el cliente por el gateway, solo lectura | Identidad del viajero ya encaminada al Orquestador | Viajes archivados, con sus reservas agrupadas | Sin viajes archivados: lista vacía, no error. Sin ninguna base disponible: error de servicio no disponible | `REF-01` |
 | Alta de un tipo de `Reserva` | Configuration-time binding en el Registro de tipos, al arrancar | Clase que extiende `Reserva` | El tipo queda registrado y la agrupación lo trata como `Reserva` | Tipo duplicado, o clase que no extiende `Reserva`: el sistema rechaza el arranque con un error que lo explica | `ADR-IT3-005` |
@@ -50,9 +50,12 @@ El Orquestador de viajes agrupa las reservas por viaje y, cuando el viaje se com
 ## Reglas de Comportamiento
 
 1. **Agrupación:** el Orquestador agrupa las reservas por viaje y devuelve en la vista principal solo las que no fueron archivadas ni sacadas de esa vista. *(Origen: [RONDA_1/ITERACION_1.md](../RONDA_1/ITERACION_1.md))*
-2. **Cierre del viaje:** un viaje está completo cuando termina su última reserva. Un proceso periódico lo detecta por fecha y lo archiva automáticamente: queda marcado como archivado, no se elimina, y sale de la vista principal. El archivo se puede consultar. *(Origen: `REF-01`)*
+2. **Cierre del viaje:** un viaje está completo cuando termina su última reserva. Un proceso periódico lo detecta por fecha y lo archiva automáticamente: queda marcado como archivado, no se elimina, y sale de la vista principal. El archivo se puede consultar. Un viaje cuenta como completo solo si tiene al menos una reserva y todas tienen `fin` menor o igual a la fecha de la corrida, incluidas las canceladas. Un viaje sin reservas no se archiva. *(Origen: `REF-01`)*
 3. **Extensión:** un medio de transporte nuevo se incorpora como clase que extiende `Reserva` y se registra en el Registro de tipos al arrancar. La agrupación no se modifica. Un tipo duplicado o una clase que no extiende `Reserva` impiden el arranque. *(Origen: `ADR-IT3-005`)*
 4. **Dos copias:** una escritura de viaje o de archivo confirmada está en la primaria y en la pasiva. Si la primaria deja de atender, la pasiva atiende. *(Origen: `ADR-IT2-004`, `ADR-IT2-005`)*
+5. **Fallo por debajo del umbral:** una lectura o escritura que falla en la primaria sin alcanzar el umbral devuelve error de servicio no disponible para esa llamada y no cae a la pasiva. Cualquier operación exitosa en la primaria reinicia el contador de fallos. *(Origen: `ADR-IT2-005`)*
+6. **Fallo de la pasiva:** un error de conexión de la pasiva durante una escritura no cuenta como caída de la primaria. La escritura se revierte en ambas bases y se devuelve error de servicio no disponible. *(Origen: `ADR-IT2-004`)*
+7. **Orden de confirmación:** la pasiva prepara antes que la primaria; luego se confirma primero en la primaria y después en la pasiva. *(Origen: `ADR-IT2-004`)*
 
 ## Criterios de Aceptación
 
@@ -72,7 +75,8 @@ El Orquestador de viajes agrupa las reservas por viaje y, cuando el viaje se com
 | Parámetro | Valor en el prototipo | Qué controla | ADR que lo declara parámetro |
 | :--- | :--- | :--- | :--- |
 | Mecanismo de detección de la caída y de promoción de la Base pasiva | Error de conexión de la primaria al escribir o leer | Cómo el Orquestador detecta que la primaria dejó de atender y promueve la pasiva | `ADR-IT2-005` |
-| Umbral de fallos consecutivos para conmutar | [sin especificar], configurable | Cuántos errores de conexión seguidos disparan la conmutación, para no conmutar por un fallo transitorio | `ADR-IT2-005` |
+| Umbral de fallos consecutivos para conmutar | 3, configurable (`TROTA_UMBRAL_CONMUTACION`; 1 o 2 en los tests) | Cuántos errores de conexión seguidos disparan la conmutación, para no conmutar por un fallo transitorio | `ADR-IT2-005` |
+| Intervalo del proceso periódico de archivado | 3600 s, configurable (`TROTA_INTERVALO_ARCHIVADO`) | Cada cuánto corre la detección de viajes completos. La misma función se invoca a demanda en las pruebas | `REF-01` |
 
 ## Simplificaciones del Prototipo
 
@@ -80,6 +84,8 @@ El Orquestador de viajes agrupa las reservas por viaje y, cuando el viaje se com
 | :--- | :--- | :--- |
 | Conector SQL del lenguaje elegido en lugar de JDBC nominal | `ADR-IT2-004` | Se mantienen la transacción y el coordinador de commit en dos fases. Lo permite [POLITICAS_SPECS_Y_PLANES.md](../POLITICAS_SPECS_Y_PLANES.md) §4.6. |
 | Tras la conmutación, la primaria anterior queda marcada como no escribible hasta que se la resincronice a mano | `ADR-IT2-005` | Evita el *split-brain* que advierte el ADR (dos copias aceptando escrituras). No se automatiza la reincorporación de la primaria, que el ADR no decide. |
+| La identidad del viajero llega por el encabezado `X-Viajero-Id` | `CON-01` | La autenticación y el encaminamiento por región son de otro slice, sin spec en esta tanda. El Orquestador recibe la identidad ya encaminada, como dice el contrato |
+| Los cinco tipos concretos (`ReservaHotel`, `ReservaAuto`, `ReservaVuelo`, `ReservaTren`, `ReservaAutobus`) no agregan campos propios; sus datos específicos irían en la columna `datos` (JSONB), hoy vacía | `ADR-IT3-005` | La spec solo fija los campos comunes de `Reserva`. Lo que se verifica es que la agrupación no conoce los tipos |
 
 ## Fuera de Alcance
 
@@ -95,3 +101,4 @@ El Orquestador de viajes agrupa las reservas por viaje y, cuando el viaje se com
 | :--- | :--- | :--- |
 | 2026-11-22 | Versión inicial (`borrador`) | Creación a partir de `REF-01` y de los ADR aceptados que la iteración le asocia |
 | 2026-11-23 | Decisiones de revisión y paso a `aprobada` (`OK SPEC`) | Cierre por fecha y archivado sin eliminar; consulta del archivo; lista vacía sin viajes; rechazo del arranque con tipo inválido; detección por error de conexión con umbral configurable y primaria vieja bloqueada |
+| 2026-11-23 | Decisiones de implementación fijadas (`PLAN-REF-01`) | Umbral de conmutación 3; intervalo de archivado 3600 s; viaje completo con al menos una reserva, incluidas las canceladas; fallo por debajo del umbral y fallo de la pasiva; orden de confirmación; 422 sin identidad; tipos concretos sin campos propios |
