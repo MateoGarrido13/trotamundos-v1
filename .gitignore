@@ -1,6 +1,7 @@
 .claude/
 .cursor/
-skill-ske.venv/
+skill-ske
+.venv/
 __pycache__/
 *.pyc
 .pytest_cache/
