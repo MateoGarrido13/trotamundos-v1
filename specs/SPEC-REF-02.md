@@ -43,9 +43,9 @@ Esta spec llega hasta el Parseo aislado, que valida el mensaje y entrega la rese
 
 | Operación / Mensaje | Dirección / Protocolo | Entrada | Salida | Errores / Cota | Origen (ADR / Iteración) |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| Autorizar o revocar | Síncrono, cliente por API Gateway hacia el Gestor | Consentimiento del titular, o pedido de revocación | Token cifrado con vencimiento, guardado en la Base primaria de viajes, o su falta | Sin token vigente no hay lectura. Un token vencido es un token no vigente: no se renueva solo, el titular debe volver a autorizar | `ADR-IT3-006` |
-| Sondeo del buzón | El Adaptador llama a la API de correo | Token vigente | Mensajes crudos de la ventana de sondeo, cada uno con su identificador, publicados en la cola de correo. En cada sondeo se vuelven a publicar los de la ventana que ya se habían publicado, con el mismo identificador | Cola llena: no publica y reintenta en el sondeo siguiente. API de correo sin respuesta: el sondeo falla y se repite en el sondeo siguiente | [RONDA_1/ITERACION_3.md](../RONDA_1/ITERACION_3.md), `ADR-IT3-002`, `ADR-IT3-003` |
-| Parseo | Asíncrono, desde la cola de correo, proceso separado | Mensaje crudo e identificador | Reserva normalizada hacia el Filtro de remitentes, o descarte de lo que no valida | Un mensaje válido es el que cumple el esquema estructurado de reserva de viaje (tipo, fechas, lugar y código). Lo demás se descarta. El proceso no tiene token ni acceso a la base | `ADR-IT3-007` |
+| Autorizar o revocar | Síncrono, cliente por API Gateway hacia el Gestor | Consentimiento del titular con el token de acceso que entrega la API de correo (`POST /correo/autorizacion`, cuerpo `{"token": ...}`, encabezado `X-Titular-Id`), o pedido de revocación (`DELETE /correo/autorizacion`, idempotente) | Token cifrado con vencimiento, guardado en la Base primaria de viajes, o su falta | Sin token vigente no hay lectura. Un token vencido es un token no vigente: no se renueva solo, el titular debe volver a autorizar. Autorizar responde 201 con el vencimiento y revocar responde 204. Sin `X-Titular-Id`, ambas responden 401 | `ADR-IT3-006` |
+| Sondeo del buzón | El Adaptador llama a la API de correo | Token vigente | Mensajes crudos de la ventana de sondeo, cada uno con su identificador, publicados en la cola de correo. En cada sondeo se vuelven a publicar los de la ventana que ya se habían publicado, con el mismo identificador | Cola llena: no publica, informa que la cola estaba llena (sin lanzar error) y reintenta en el sondeo siguiente. API de correo sin respuesta: el sondeo falla, sin afectar el sondeo de los demás titulares, y se repite en el sondeo siguiente | [RONDA_1/ITERACION_3.md](../RONDA_1/ITERACION_3.md), `ADR-IT3-002`, `ADR-IT3-003` |
+| Parseo | Asíncrono, desde la cola de correo, proceso separado | Mensaje crudo e identificador | Reserva normalizada (con su identificador, el titular y el remitente) hacia el Filtro de remitentes, o descarte de lo que no valida | Un mensaje válido es el que cumple el esquema estructurado de reserva de viaje (tipo, fechas, lugar y código). Lo demás se descarta. El proceso no tiene token ni acceso a la base | `ADR-IT3-007` |
 
 ## Reglas de Comportamiento
 
@@ -56,6 +56,11 @@ Esta spec llega hasta el Parseo aislado, que valida el mensaje y entrega la rese
 5. **Idempotencia:** el identificador asignado por el Adaptador llega intacto al otro lado del parseo para que la ingesta pueda descartar duplicados. Como cada sondeo repite los mensajes de la ventana, la ingesta es quien evita que un mismo correo cree dos reservas. *(Origen: `ADR-IT3-003`)*
 6. **Vencimiento del token:** un token vencido cuenta como no vigente. El Adaptador no lee y el titular debe volver a autorizar. *(Origen: `ADR-IT3-006`)*
 7. **Mensaje que agota reintentos:** va a la cola de mensajes muertos, con aviso a operaciones. *(Origen: `ADR-IT3-002`, `ADR-IT3-003`)*
+8. **Identificador sin `Message-ID`:** si el correo no trae `Message-ID`, el identificador es el SHA-256 del cuerpo crudo. *(Origen: `ADR-IT3-003`)*
+9. **Mensaje publicado:** el Adaptador publica en la cola de correo el identificador, el titular, el remitente y el cuerpo crudo. Nunca el token. *(Origen: `ADR-IT3-007`)*
+10. **Validación del Parseo:** el cuerpo debe ser un JSON con exactamente `tipo`, `inicio`, `fin`, `lugar` y `codigo`. Se descartan los campos extra, los textos vacíos o de más de 200 caracteres (`tipo`, `lugar` y `codigo`), los caracteres de control, un identificador, titular o remitente de más de 200 caracteres o con caracteres de control, un `fin` anterior a `inicio` y un cuerpo de más de 64 KB. *(Origen: `ADR-IT3-007`)*
+11. **Descarte y fallo del Parseo:** un mensaje que el Parseo descarta cuenta como entregado: no se reintenta ni va a la cola de mensajes muertos. Si el proceso de parseo falla o muere, sí se reintenta (regla 7). *(Origen: `ADR-IT3-002`, `ADR-IT3-007`)*
+12. **Sondeo programado:** en cada ciclo el Adaptador sondea a todos los titulares con token guardado, vigente o vencido; la vigencia la comprueba el Adaptador al leer. *(Origen: `ADR-IT3-006`)*
 
 ## Criterios de Aceptación
 
@@ -83,6 +88,8 @@ Esta spec llega hasta el Parseo aislado, que valida el mensaje y entrega la rese
 | Retención de identificadores ya procesados | 7 días, configurable. Nunca menor que la ventana de sondeo | Cuánto tiempo se conservan los identificadores para descartar duplicados | `ADR-IT3-003` |
 | Límite de tasa de entrega de la ingesta al Orquestador | 20 mensajes por segundo, configurable | Tope de entregas para que el pico de entrada no consuma los nodos del Orquestador | `ADR-IT3-010` |
 | Vigencia del token de acceso | 60 minutos, configurable | Cuánto dura un token antes de contar como no vigente | `ADR-IT3-006` |
+| Tamaño máximo del correo crudo | 64 KB | Tope de lo que el Parseo acepta; lo que lo excede se descarta | `ADR-IT3-007` |
+| Largo máximo de un campo de texto de la reserva | 200 caracteres | Tope de `tipo`, `lugar` y `codigo`, y de identificador, titular y remitente | `ADR-IT3-007` |
 
 ## Simplificaciones del Prototipo
 
@@ -108,3 +115,4 @@ Esta spec llega hasta el Parseo aislado, que valida el mensaje y entrega la rese
 | :--- | :--- | :--- |
 | 2026-11-22 | Versión inicial (`borrador`) | Creación a partir de `REF-02` y de los ADR aceptados que la iteración le asocia |
 | 2026-11-23 | Decisiones de revisión | Esquema estructurado de mensaje válido; valores de parámetros; sondeo de ventana sin estado con idempotencia por identificador; token con vencimiento sin renovación; Parseo como proceso real del sistema operativo; Base primaria de viajes nombrada para los tokens; criterios de aceptación nuevos |
+| 2026-11-23 | Decisiones de implementación fijadas (`PLAN-REF-02`) | Cuerpo y códigos de los endpoints de autorización; hash SHA-256 del cuerpo sin `Message-ID`; mensaje publicado sin token; reglas de validación del Parseo con topes de 64 KB y 200 caracteres; descarte contado como entregado; resultado de cola llena; sondeo de todos los titulares con token guardado; la reserva normalizada lleva titular y remitente |
