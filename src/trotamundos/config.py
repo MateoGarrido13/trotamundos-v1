@@ -33,6 +33,9 @@ class ConfiguracionBases:
         "TROTA_DSN_VIAJES_PASIVA",
         "postgresql://trotamundos:trotamundos@localhost:5434/viajes_pasiva",
     )
+    # SPEC-REF-01 / ADR-IT2-005: errores de conexión consecutivos que disparan la conmutación.
+    # La spec lo deja [sin especificar]; 3 es la propuesta del plan, a confirmar.
+    umbral_conmutacion: int = int(_env("TROTA_UMBRAL_CONMUTACION", "3"))
 
 
 @dataclass(frozen=True)
