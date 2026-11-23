@@ -16,7 +16,8 @@ from trotamundos.dominio.registro_tipos import RegistroTipos
 from trotamundos.dominio.reserva import Reserva
 from trotamundos.persistencia.base_viajes import BaseViajes
 
-CAMPOS_COMUNES = {"identificador", "viaje_id", "inicio", "fin", "estado", "lugar"}
+CAMPOS_COMUNES = {"identificador", "viaje_id", "inicio", "fin", "estado", "lugar", "origen",
+                  "creado_por", "editada_manualmente", "baja_en"}
 
 
 @dataclass(frozen=True)
@@ -34,16 +35,18 @@ class RepositorioViajes:
     # --- escritura (2PC) ----------------------------------------------------
     def insertar_viaje(self, viaje_id: str, viajero_id: str) -> None:
         self._base.escribir(lambda c: c.execute(
-            "INSERT INTO viaje (id, viajero_id) VALUES (%s, %s)", (viaje_id, viajero_id)))
+            "INSERT INTO viaje (id, viajero_id, itinerario_id) VALUES (%s, %s, %s)",
+            (viaje_id, viajero_id, viajero_id)))  # itinerario individual: id = la cuenta
 
     def insertar_reserva(self, reserva: Reserva) -> None:
         tipo = self._nombre_de_tipo(type(reserva))
         datos = reserva.model_dump(mode="json", exclude=CAMPOS_COMUNES)
         self._base.escribir(lambda c: c.execute(
-            "INSERT INTO reserva (identificador, viaje_id, tipo, inicio, fin, estado, lugar, datos)"
-            " VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
+            "INSERT INTO reserva (identificador, viaje_id, tipo, inicio, fin, estado, lugar, datos,"
+            " origen, creado_por) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
             (reserva.identificador, reserva.viaje_id, tipo, reserva.inicio, reserva.fin,
-             reserva.estado.value, reserva.lugar, Jsonb(datos))))
+             reserva.estado.value, reserva.lugar, Jsonb(datos), reserva.origen.value,
+             reserva.creado_por)))
 
     def incorporar_reserva(self, viajero_id: str, reserva: Reserva) -> None:
         """Escribe el viaje y la reserva en una sola escritura de dos fases. Es idempotente:
@@ -54,13 +57,15 @@ class RepositorioViajes:
         datos = Jsonb(reserva.model_dump(mode="json", exclude=CAMPOS_COMUNES))
 
         def op(c):
-            c.execute("INSERT INTO viaje (id, viajero_id) VALUES (%s, %s) ON CONFLICT DO NOTHING",
-                      (reserva.viaje_id, viajero_id))
+            c.execute("INSERT INTO viaje (id, viajero_id, itinerario_id) VALUES (%s, %s, %s)"
+                      " ON CONFLICT DO NOTHING", (reserva.viaje_id, viajero_id, viajero_id))
             c.execute(
-                "INSERT INTO reserva (identificador, viaje_id, tipo, inicio, fin, estado, lugar, datos)"
-                " VALUES (%s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING",
+                "INSERT INTO reserva (identificador, viaje_id, tipo, inicio, fin, estado, lugar, datos,"
+                " origen, creado_por) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+                " ON CONFLICT DO NOTHING",
                 (reserva.identificador, reserva.viaje_id, tipo, reserva.inicio, reserva.fin,
-                 reserva.estado.value, reserva.lugar, datos))
+                 reserva.estado.value, reserva.lugar, datos, reserva.origen.value,
+                 reserva.creado_por))
         self._base.escribir(op)
 
     def archivar(self, viaje_ids: list[str], ahora: datetime) -> None:
@@ -85,18 +90,22 @@ class RepositorioViajes:
 
         def consulta(c):
             return c.execute(
-                "SELECT identificador, viaje_id, tipo, inicio, fin, estado, lugar, datos"
-                " FROM reserva WHERE viaje_id = ANY(%s) ORDER BY inicio, identificador",
+                "SELECT identificador, viaje_id, tipo, inicio, fin, estado, lugar, datos,"
+                " origen, creado_por, editada_manualmente, baja_en"
+                " FROM reserva WHERE viaje_id = ANY(%s) AND baja_en IS NULL"  # las bajas no se ven
+                " ORDER BY inicio, identificador",
                 (viaje_ids,)).fetchall()
         return [self._hidratar(*f) for f in self._base.leer(consulta)]
 
     def viajes_completos(self, ahora: datetime) -> list[str]:
-        """Viajes activos con al menos una reserva y todas con `fin <= ahora`."""
+        """Viajes activos con al menos una reserva vigente y todas con `fin <= ahora`.
+        Una reserva en baja lógica no cuenta (SPEC-REF-04)."""
         def consulta(c):
             return c.execute(
                 "SELECT v.id FROM viaje v WHERE v.estado = 'activo'"
-                " AND EXISTS (SELECT 1 FROM reserva r WHERE r.viaje_id = v.id)"
-                " AND NOT EXISTS (SELECT 1 FROM reserva r WHERE r.viaje_id = v.id AND r.fin > %s)"
+                " AND EXISTS (SELECT 1 FROM reserva r WHERE r.viaje_id = v.id AND r.baja_en IS NULL)"
+                " AND NOT EXISTS (SELECT 1 FROM reserva r WHERE r.viaje_id = v.id"
+                " AND r.baja_en IS NULL AND r.fin > %s)"
                 " ORDER BY v.id", (ahora,)).fetchall()
         return [f[0] for f in self._base.leer(consulta)]
 
@@ -107,7 +116,9 @@ class RepositorioViajes:
                 return nombre
         raise ValueError(f"La clase {clase.__name__} no está registrada en el Registro de tipos")
 
-    def _hidratar(self, identificador, viaje_id, tipo, inicio, fin, estado, lugar, datos) -> Reserva:
+    def _hidratar(self, identificador, viaje_id, tipo, inicio, fin, estado, lugar, datos,
+                  origen, creado_por, editada_manualmente, baja_en) -> Reserva:
         clase = self._registro.clase_de(tipo)
         return clase(identificador=identificador, viaje_id=viaje_id, inicio=inicio, fin=fin,
-                     estado=estado, lugar=lugar, **datos)
+                     estado=estado, lugar=lugar, origen=origen, creado_por=creado_por,
+                     editada_manualmente=editada_manualmente, baja_en=baja_en, **datos)

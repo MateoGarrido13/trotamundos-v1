@@ -9,7 +9,7 @@ from trotamundos.app import create_app
 from trotamundos.dominio.registro_tipos import ErrorRegistroTipos
 from trotamundos.dominio.reserva import Reserva
 from trotamundos.dominio.tipos_reserva import (
-    ReservaAutobus, ReservaAuto, ReservaHotel, ReservaTren, ReservaVuelo,
+    ReservaActividad, ReservaAutobus, ReservaAuto, ReservaHotel, ReservaTren, ReservaVuelo,
 )
 
 
@@ -20,10 +20,12 @@ def test_AC_REF_01_08_arranque_rechaza_tipo_duplicado_o_clase_invalida():
         create_app(tipos_extra={"nuevo": dict})
 
 
-def test_arranque_registra_los_cinco_tipos_base():
+def test_arranque_registra_los_tipos_base():
+    # Los cinco medios de REF-01 más `actividad`, que SPEC-REF-04 suma al Registro de tipos.
     tipos = create_app().state.registro_tipos.tipos()
     assert tipos == {"hotel": ReservaHotel, "auto": ReservaAuto, "vuelo": ReservaVuelo,
-                     "tren": ReservaTren, "autobus": ReservaAutobus}
+                     "tren": ReservaTren, "autobus": ReservaAutobus,
+                     "actividad": ReservaActividad}
     assert all(issubclass(c, Reserva) for c in tipos.values())
 
 

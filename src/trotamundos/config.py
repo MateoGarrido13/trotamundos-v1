@@ -64,12 +64,19 @@ class ConfiguracionIngesta:
 
 
 @dataclass(frozen=True)
+class ConfiguracionGestion:
+    # SPEC-REF-04, «Parámetros Configurables».
+    retencion_claves_dias: int = int(_env("TROTA_RETENCION_CLAVES_DIAS", "7"))
+
+
+@dataclass(frozen=True)
 class Configuracion:
     correo: ConfiguracionCorreo = field(default_factory=ConfiguracionCorreo)
     broker: ConfiguracionBroker = field(default_factory=ConfiguracionBroker)
     bases: ConfiguracionBases = field(default_factory=ConfiguracionBases)
     revision: ConfiguracionRevision = field(default_factory=ConfiguracionRevision)
     ingesta: ConfiguracionIngesta = field(default_factory=ConfiguracionIngesta)
+    gestion: ConfiguracionGestion = field(default_factory=ConfiguracionGestion)
 
     def __post_init__(self) -> None:
         # Ninguna retención puede ser menor que la ventana de sondeo (SPEC-REF-02/03): si lo

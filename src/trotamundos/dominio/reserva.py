@@ -17,8 +17,20 @@ class EstadoReserva(StrEnum):
     CANCELADA = "cancelada"
 
 
+class Origen(StrEnum):
+    """De dónde vino la reserva."""
+
+    MANUAL = "manual"
+    CORREO = "correo"
+    PROVEEDOR = "proveedor"
+
+
 class Reserva(BaseModel, ABC):
-    """Identificador, viaje, fechas, estado y resumen (SPEC-REF-01); `lugar` (ADR-IT4-009)."""
+    """Identificador, viaje, fechas, estado y resumen (SPEC-REF-01); `lugar` (ADR-IT4-009).
+
+    SPEC-REF-04: `origen`, `creado_por` (la cuenta que la creó; las del correo o de un
+    proveedor no tienen), `editada_manualmente` (una novedad no la pisa) y `baja_en` (baja
+    lógica: la reserva se conserva para el historial)."""
 
     identificador: str
     viaje_id: str
@@ -26,6 +38,10 @@ class Reserva(BaseModel, ABC):
     fin: datetime
     estado: EstadoReserva = EstadoReserva.CONFIRMADA
     lugar: str | None = None
+    origen: Origen = Origen.MANUAL
+    creado_por: str | None = None
+    editada_manualmente: bool = False
+    baja_en: datetime | None = None
 
     @abstractmethod
     def resumen(self) -> str:

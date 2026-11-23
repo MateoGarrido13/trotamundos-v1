@@ -12,10 +12,12 @@ from trotamundos.config import Configuracion
 from trotamundos.dominio.registro_tipos import RegistroTipos
 from trotamundos.composicion import ensamblar_correo
 from trotamundos.orquestador import api as api_viajes
-from trotamundos.orquestador import api_revision
+from trotamundos.orquestador import api_gestion, api_revision
 from trotamundos.orquestador.archivado import tarea_periodica
 from trotamundos.orquestador.arranque import registrar_tipos
+from trotamundos.orquestador.gestion_reservas import GestionReservas, tarea_purga_claves
 from trotamundos.orquestador.incorporacion import IncorporadorReservas
+from trotamundos.orquestador.novedades import ServicioNovedades
 from trotamundos.orquestador.revision import ServicioRevision, tarea_purga
 from trotamundos.persistencia.base_viajes import BaseViajes
 from trotamundos.persistencia.repositorio_revision import RepositorioRevision
@@ -30,6 +32,7 @@ def create_app(configuracion: Configuracion | None = None,
     registrar_tipos(registro, tipos_extra)
     base_viajes = BaseViajes.desde_config(cfg.bases)
     repositorio = RepositorioViajes(base_viajes, registro)
+    gestion = GestionReservas(base_viajes, registro, repositorio, configuracion=cfg.gestion)
     broker = Broker(cfg.broker)
     servicio_revision = ServicioRevision(
         RepositorioRevision(base_viajes, cfg.revision.tope_pendientes), cfg.revision)
@@ -39,7 +42,8 @@ def create_app(configuracion: Configuracion | None = None,
     @asynccontextmanager
     async def ciclo_de_vida(_: FastAPI):
         tareas = [asyncio.create_task(tarea_periodica(repositorio)),
-                  asyncio.create_task(tarea_purga(servicio_revision, cfg.revision.intervalo_purga_segundos))]
+                  asyncio.create_task(tarea_purga(servicio_revision, cfg.revision.intervalo_purga_segundos)),
+                  asyncio.create_task(tarea_purga_claves(gestion, cfg.revision.intervalo_purga_segundos))]
         try:
             yield
         finally:
@@ -53,9 +57,12 @@ def create_app(configuracion: Configuracion | None = None,
     app.state.base_viajes = base_viajes
     app.state.repositorio = repositorio
     app.state.servicio_revision = servicio_revision
+    app.state.gestion = gestion
+    app.state.novedades = ServicioNovedades(base_viajes, registro)
     app.state.nodos_correo = nodos_correo
     app.include_router(api_viajes.router)
     app.include_router(api_revision.router)
+    app.include_router(api_gestion.router)
 
     @app.get("/salud")
     def salud() -> dict[str, str]:

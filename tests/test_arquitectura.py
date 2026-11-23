@@ -31,6 +31,9 @@ PROHIBIDOS = [
     ("entrada/filtro_remitentes", "trotamundos.persistencia", "el filtro no guarda nada ni escribe la reserva"),
     ("entrada/ingesta", "trotamundos.persistencia", "la ingesta nunca escribe en la base: entrega al Orquestador"),
     ("dominio/puertos_correo", "trotamundos.config", "los puertos solo dependen del dominio"),
+    ("persistencia", "trotamundos.orquestador", "la persistencia no depende de la lógica de negocio"),
+    ("persistencia", "trotamundos.entrada", "la persistencia no depende de los nodos de entrada"),
+    ("orquestador/api_gestion", "trotamundos.entrada", "ADR-IT3-010: el contacto es el Broker"),
 ]
 
 
@@ -72,3 +75,13 @@ def test_parseo_aislado_solo_usa_pydantic_y_biblioteca_estandar():
                 m == p or m.startswith(p + ".") for p in permitidos
             )
             assert ok, f"{archivo.name} importa {m}"
+
+
+def test_el_modulo_de_control_de_acceso_no_se_consulta_desde_fuera_del_orquestador():
+    """SPEC-REF-04: el Módulo de control de acceso está dentro del Orquestador."""
+    for archivo in RAIZ.rglob("*.py"):
+        relativo = archivo.relative_to(RAIZ)
+        if relativo.parts[0] == "orquestador":
+            continue
+        malos = [m for m in _imports(archivo) if m.startswith("trotamundos.orquestador.control_acceso")]
+        assert not malos, f"{relativo} importa {malos}: el control de acceso es interno al Orquestador"

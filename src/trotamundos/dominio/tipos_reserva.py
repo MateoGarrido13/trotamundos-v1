@@ -44,10 +44,17 @@ class ReservaAutobus(_ReservaConEtiqueta):
     etiqueta: ClassVar[str] = "Autobús"
 
 
+class ReservaActividad(_ReservaConEtiqueta):
+    """Actividad que un miembro registra en un itinerario (SPEC-REF-04, ADR-IT4-008)."""
+
+    etiqueta: ClassVar[str] = "Actividad"
+
+
 TIPOS_BASE: dict[str, type[Reserva]] = {
     "hotel": ReservaHotel,
     "auto": ReservaAuto,
     "vuelo": ReservaVuelo,
     "tren": ReservaTren,
     "autobus": ReservaAutobus,
+    "actividad": ReservaActividad,
 }

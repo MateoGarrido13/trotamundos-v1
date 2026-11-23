@@ -12,6 +12,7 @@ from __future__ import annotations
 import asyncio
 
 from trotamundos.dominio.registro_tipos import RegistroTipos
+from trotamundos.dominio.reserva import Origen
 from trotamundos.dominio.reserva_normalizada import ReservaNormalizada
 from trotamundos.persistencia.repositorio_viajes import RepositorioViajes
 
@@ -32,5 +33,6 @@ class IncorporadorReservas:
             # La spec no define a qué viaje va una reserva del correo: cada una crea el suyo.
             viaje_id=f"viaje-{identificador}",
             inicio=rn.inicio, fin=rn.fin, lugar=rn.lugar, codigo=rn.codigo,
+            origen=Origen.CORREO,  # sin `creado_por`: solo el organizador la puede modificar
         )
         self._repo.incorporar_reserva(rn.titular_id, reserva)

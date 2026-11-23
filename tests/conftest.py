@@ -40,7 +40,8 @@ def limpiar_base(dsn: str) -> None:
             "SELECT gid FROM pg_prepared_xacts WHERE database = current_database()").fetchall()
         for (gid,) in gids:
             conn.execute(f"ROLLBACK PREPARED '{gid}'")
-        conn.execute("DROP TABLE IF EXISTS reserva, viaje, token_correo, remitente_seguro, mensaje_revision CASCADE")
+        conn.execute("DROP TABLE IF EXISTS reserva, viaje, token_correo, remitente_seguro, mensaje_revision,"
+            " membresia, auditoria, clave_operacion, novedad CASCADE")
         aplicar_esquemas(conn)
 
 
