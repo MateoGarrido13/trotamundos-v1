@@ -1,0 +1,39 @@
+# Bases de viajes del prototipo (Tier 3). Dos instancias físicamente separadas:
+# la primaria y la pasiva (ADR-IT2-004 / ADR-IT2-005).
+# max_prepared_transactions > 0 es necesario para el commit en dos fases (PREPARE TRANSACTION).
+# Las bases de cuentas (3 regiones x 2) y la analítica se agregan con sus slices.
+x-postgres: &postgres
+  image: postgres:16
+  restart: unless-stopped
+  command: ["postgres", "-c", "max_prepared_transactions=20"]
+
+services:
+  viajes_primaria:
+    <<: *postgres
+    environment:
+      POSTGRES_USER: trotamundos
+      POSTGRES_PASSWORD: trotamundos
+      POSTGRES_DB: viajes_primaria
+    ports: ["5433:5432"]
+    volumes: ["viajes_primaria_data:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U trotamundos -d viajes_primaria"]
+      interval: 3s
+      retries: 20
+
+  viajes_pasiva:
+    <<: *postgres
+    environment:
+      POSTGRES_USER: trotamundos
+      POSTGRES_PASSWORD: trotamundos
+      POSTGRES_DB: viajes_pasiva
+    ports: ["5434:5432"]
+    volumes: ["viajes_pasiva_data:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U trotamundos -d viajes_pasiva"]
+      interval: 3s
+      retries: 20
+
+volumes:
+  viajes_primaria_data:
+  viajes_pasiva_data:
