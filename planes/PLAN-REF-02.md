@@ -1,7 +1,7 @@
 # PLAN-REF-02. Procesamiento de correo
 
 * **Spec asociada:** [SPEC-REF-02](../specs/SPEC-REF-02.md) *(estado `aprobada`)*
-* **Estado:** aprobado
+* **Estado:** terminado
 * **Fecha:** 2026-11-23
 * **Incremento (Slice):** Slice 3 de [PLAN_MAESTRO.md](PLAN_MAESTRO.md)
 
@@ -76,7 +76,7 @@ Ajuste al test de arquitectura (`tests/test_arquitectura.py`): agregar la prohib
 | `AC-REF-02-09` | `T-REF-02-05` | `test_AC_REF_02_09_dos_sondeos_publican_el_mismo_identificador` | `[x] Verde` |
 | `AC-REF-02-10` | `T-REF-02-07` | `test_AC_REF_02_10_reintentos_agotados_van_a_mensajes_muertos_con_aviso` | `[x] Verde` |
 | `AC-REF-02-05` | `T-REF-02-06`, `T-REF-02-07` | `test_AC_REF_02_05_reserva_valida_llega_al_filtro_con_su_identificador` | `[x] Verde` |
-| `AC-REF-02-06` | `T-REF-02-08`, `T-REF-02-09` | `test_AC_REF_02_06_revocar_deja_de_leer_y_conserva_la_reserva_incorporada` | `[ ] Pendiente` (revocación cubierta por T-REF-02-08; falta T-REF-02-09) |
+| `AC-REF-02-06` | `T-REF-02-08`, `T-REF-02-09` | `test_AC_REF_02_06_revocar_deja_de_leer_y_conserva_la_reserva_incorporada` | `[x] Verde` (T-REF-02-08 en memoria; T-REF-02-09 de punta a punta contra PostgreSQL) |
 
 ## Estrategia de Pruebas y Simulación de Fallos
 

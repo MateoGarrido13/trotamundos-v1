@@ -9,6 +9,7 @@ from trotamundos.entrada.gestor_autorizacion.gestor import GestorAutorizacion
 from trotamundos.entrada.gestor_autorizacion.repositorio import (
     RepositorioTokens,
     RepositorioTokensEnMemoria,
+    RepositorioTokensPostgres,
     TokenGuardado,
 )
 
@@ -17,5 +18,6 @@ __all__ = [
     "GestorAutorizacion",
     "RepositorioTokens",
     "RepositorioTokensEnMemoria",
+    "RepositorioTokensPostgres",
     "TokenGuardado",
 ]

@@ -1,7 +1,7 @@
 # PLAN-REF-01. Ciclo de vida del viaje
 
 * **Spec asociada:** [SPEC-REF-01](../specs/SPEC-REF-01.md) *(estado `aprobada`)*
-* **Estado:** aprobado
+* **Estado:** terminado
 * **Fecha:** 2026-11-23
 * **Incremento (Slice):** Slice 4 de [PLAN_MAESTRO.md](PLAN_MAESTRO.md) (con la parte de `QA-DIS-01` que el Slice 2 deja a esta spec)
 

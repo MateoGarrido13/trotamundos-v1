@@ -34,13 +34,13 @@ from trotamundos.persistencia.esquemas import aplicar_esquemas  # noqa: E402
 
 
 def limpiar_base(dsn: str) -> None:
-    """Revierte transacciones preparadas colgadas y recrea las tablas de REF-01."""
+    """Revierte transacciones preparadas colgadas y recrea las tablas (REF-01 y REF-02)."""
     with conectar(dsn, autocommit=True) as conn:
         gids = conn.execute(
             "SELECT gid FROM pg_prepared_xacts WHERE database = current_database()").fetchall()
         for (gid,) in gids:
             conn.execute(f"ROLLBACK PREPARED '{gid}'")
-        conn.execute("DROP TABLE IF EXISTS reserva, viaje CASCADE")
+        conn.execute("DROP TABLE IF EXISTS reserva, viaje, token_correo CASCADE")
         aplicar_esquemas(conn)
 
 
