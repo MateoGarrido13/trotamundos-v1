@@ -13,13 +13,16 @@ from dataclasses import dataclass
 
 from collections.abc import Mapping
 
+from trotamundos.asistente.asistente import ModuloAsistente
+from trotamundos.asistente.motor import IMotorConversacional, MotorSimulado
 from trotamundos.broker import Broker
-from trotamundos.config import ConfiguracionAgencias, ConfiguracionIngesta
+from trotamundos.config import ConfiguracionAgencias, ConfiguracionAsistente, ConfiguracionIngesta
 from trotamundos.dominio.agencias import IAgencia
 from trotamundos.dominio.puertos_casos import EntregaNovedadCaso
 from trotamundos.entrada.agencia import AdaptadorAgencia, MockAgencia
 from trotamundos.entrada.filtro_remitentes import FiltroWhitelist
 from trotamundos.entrada.ingesta import ServicioIngesta
+from trotamundos.orquestador.fachada_asistente import FachadaAsistente
 from trotamundos.orquestador.incorporacion import IncorporadorReservas
 from trotamundos.orquestador.revision import ServicioRevision
 
@@ -54,3 +57,16 @@ def ensamblar_agencias(
     registro = dict(agencias) if agencias is not None else {
         nombre: MockAgencia(nombre) for nombre in configuracion.disponibles}
     return AdaptadorAgencia(broker, registro, configuracion)
+
+
+def ensamblar_asistente(
+    orquestador_app,
+    motor: IMotorConversacional | None = None,
+    configuracion: ConfiguracionAsistente | None = None,
+) -> ModuloAsistente:
+    """El Módulo de Asistente sobre los servicios del Orquestador (`app.state` de su app). Es el
+    único lugar que conecta `asistente` con `orquestador`. Sin motor, usa el simulado."""
+    st = orquestador_app.state
+    fachada = FachadaAsistente(st.gestion, st.casos, st.novedades, st.registro_tipos)
+    cfg = configuracion or st.configuracion.asistente
+    return ModuloAsistente(motor or MotorSimulado(), fachada, cfg)
