@@ -69,6 +69,27 @@ class ConfiguracionGestion:
     retencion_claves_dias: int = int(_env("TROTA_RETENCION_CLAVES_DIAS", "7"))
 
 
+def _contactos_por_defecto() -> dict[str, str]:
+    """`TROTA_AGENCIAS_CONTACTO="agencia-a=+54 11 4000-0001,agencia-b=+54 11 4000-0002"`."""
+    crudo = _env("TROTA_AGENCIAS_CONTACTO", "agencia-a=+54 11 4000-0001,agencia-b=+54 11 4000-0002")
+    pares = (p.split("=", 1) for p in crudo.split(",") if "=" in p)
+    return {nombre.strip(): numero.strip() for nombre, numero in pares}
+
+
+@dataclass(frozen=True)
+class ConfiguracionAgencias:
+    # SPEC-REF-05. Las agencias disponibles se registran en la configuración (simplificación),
+    # cada una con su nombre y su número de contacto.
+    disponibles: tuple[str, ...] = tuple(
+        a.strip() for a in _env("TROTA_AGENCIAS", "agencia-a,agencia-b").split(",") if a.strip())
+    contactos: dict[str, str] = field(default_factory=_contactos_por_defecto)
+    # Clave compartida con la que la agencia autentica su aviso. Vacía: ningún aviso es válido.
+    clave_aviso: str = _env("TROTA_CLAVE_AGENCIA", "")
+    # Reintentos del Orquestador al publicar el pedido con la cola llena: 1 s, 2 s y 4 s.
+    reintentos_publicacion: int = int(_env("TROTA_REINTENTOS_PUBLICACION", "3"))
+    backoff_publicacion_segundos: float = float(_env("TROTA_BACKOFF_PUBLICACION", "1.0"))
+
+
 @dataclass(frozen=True)
 class Configuracion:
     correo: ConfiguracionCorreo = field(default_factory=ConfiguracionCorreo)
@@ -77,6 +98,7 @@ class Configuracion:
     revision: ConfiguracionRevision = field(default_factory=ConfiguracionRevision)
     ingesta: ConfiguracionIngesta = field(default_factory=ConfiguracionIngesta)
     gestion: ConfiguracionGestion = field(default_factory=ConfiguracionGestion)
+    agencias: ConfiguracionAgencias = field(default_factory=ConfiguracionAgencias)
 
     def __post_init__(self) -> None:
         # Ninguna retención puede ser menor que la ventana de sondeo (SPEC-REF-02/03): si lo

@@ -34,6 +34,12 @@ PROHIBIDOS = [
     ("persistencia", "trotamundos.orquestador", "la persistencia no depende de la lógica de negocio"),
     ("persistencia", "trotamundos.entrada", "la persistencia no depende de los nodos de entrada"),
     ("orquestador/api_gestion", "trotamundos.entrada", "ADR-IT3-010: el contacto es el Broker"),
+    ("entrada/agencia", "trotamundos.persistencia", "el Adaptador no escribe la Base de viajes ni la lee"),
+    ("entrada/agencia", "trotamundos.orquestador", "ADR-IT3-010: el contacto es el Broker"),
+    ("entrada/api_agencia", "trotamundos.persistencia", "el listener no escribe la Base de viajes ni la lee"),
+    ("orquestador/casos", "trotamundos.entrada", "el Orquestador solo conoce los nombres de las agencias"),
+    ("dominio/agencias", "trotamundos.config", "el dominio no depende de nadie"),
+    ("dominio/puertos_casos", "trotamundos.broker", "los puertos solo dependen del dominio"),
 ]
 
 

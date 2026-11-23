@@ -10,6 +10,8 @@ from __future__ import annotations
 from fastapi import FastAPI, Header, HTTPException, Response
 from pydantic import BaseModel
 
+from trotamundos.entrada import api_agencia
+from trotamundos.entrada.agencia import AdaptadorAgencia
 from trotamundos.entrada.gestor_autorizacion import GestorAutorizacion
 
 
@@ -17,8 +19,10 @@ class Consentimiento(BaseModel):
     token: str
 
 
-def create_app(gestor: GestorAutorizacion) -> FastAPI:
+def create_app(gestor: GestorAutorizacion, adaptador_agencia: AdaptadorAgencia | None = None) -> FastAPI:
     app = FastAPI(title="Trotamundos - nodos de entrada")
+    if adaptador_agencia is not None:  # listener del aviso de la agencia (SPEC-REF-05)
+        app.include_router(api_agencia.crear_router(adaptador_agencia))
 
     def _titular(x_titular_id: str | None) -> str:
         if not x_titular_id:

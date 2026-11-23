@@ -2,13 +2,14 @@
 # ELEMENTO PASO 5: Servicio de ingesta (ITERACION_3)
 # ADRs: ADR-IT3-003, ADR-IT3-010
 # DRIVERS: REF-03, QA-SEG-03*
-"""Servicio de ingesta del lado del correo.
+"""Servicio de ingesta.
 
-Recibe las reservas del Filtro de remitentes por la cola `novedades` del Broker (el paso 5
-dice que la ingesta toma de esa cola y del Filtro), descarta los duplicados por identificador,
-entrega al Orquestador con un límite de tasa y reintenta si la entrega falla. Agotados los
-reintentos, el Broker manda el mensaje a la cola de mensajes muertos con aviso a operaciones.
-La ingesta nunca escribe en la base: entrega al Orquestador."""
+Toma de la cola `novedades` del Broker dos clases de mensaje, que distingue por `origen`:
+las reservas del correo que le entrega el Filtro de remitentes (SPEC-REF-03) y los cambios de
+estado de un caso de ayuda que publica el Adaptador de agencia (SPEC-REF-05). Descarta los
+duplicados por identificador, entrega al Orquestador con un límite de tasa y reintenta si la
+entrega falla. Agotados los reintentos, el Broker manda el mensaje a la cola de mensajes
+muertos con aviso a operaciones. La ingesta nunca escribe en la base: entrega al Orquestador."""
 from __future__ import annotations
 
 import asyncio
@@ -18,6 +19,8 @@ from datetime import UTC, datetime, timedelta
 
 from trotamundos.broker import Broker, Mensaje, NombreCola, ResultadoEntrega
 from trotamundos.config import ConfiguracionIngesta
+from trotamundos.dominio.agencias import EstadoCaso
+from trotamundos.dominio.puertos_casos import EntregaNovedadCaso
 from trotamundos.dominio.puertos_correo import EntregaOrquestador
 from trotamundos.dominio.reserva_normalizada import ReservaNormalizada
 
@@ -56,12 +59,14 @@ class ServicioIngesta:
         entrega: EntregaOrquestador,
         configuracion: ConfiguracionIngesta | None = None,
         *,
+        entrega_casos: EntregaNovedadCaso | None = None,
         limitador: LimitadorTasa | None = None,
         reloj: Callable[[], datetime] = _ahora_utc,
     ) -> None:
         cfg = configuracion or ConfiguracionIngesta()
         self._broker = broker
         self._entrega = entrega
+        self._entrega_casos = entrega_casos
         self._retencion = timedelta(days=cfg.retencion_ids_dias)
         self._limitador = limitador or LimitadorTasa(cfg.tasa_por_segundo)
         self._reloj = reloj
@@ -83,9 +88,19 @@ class ServicioIngesta:
     async def _manejar(self, mensaje: Mensaje) -> None:
         if self._ya_procesado(mensaje.id):
             return  # duplicado: se descarta
-        reserva = ReservaNormalizada.model_validate(mensaje.cuerpo["reserva"])
-        await self._limitador.esperar()
-        await self._entrega.incorporar(reserva)
+        origen = mensaje.cuerpo.get("origen")
+        if origen == "correo":
+            reserva = ReservaNormalizada.model_validate(mensaje.cuerpo["reserva"])
+            await self._limitador.esperar()
+            await self._entrega.incorporar(reserva)
+        elif origen == "caso":
+            if self._entrega_casos is None:
+                raise RuntimeError("la ingesta no tiene a quién entregarle los cambios de estado de casos")
+            await self._limitador.esperar()
+            await self._entrega_casos.aplicar_estado_caso(
+                mensaje.cuerpo["id_caso"], EstadoCaso(mensaje.cuerpo["estado"]))
+        else:
+            raise ValueError(f"origen de novedad desconocido: {origen!r}")
         # Se marca como procesado recién después de entregar: si se marcara antes, el reintento
         # tras un fallo se descartaría y la reserva se perdería.
         self._procesados[mensaje.id] = self._reloj()

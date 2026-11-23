@@ -41,7 +41,7 @@ def limpiar_base(dsn: str) -> None:
         for (gid,) in gids:
             conn.execute(f"ROLLBACK PREPARED '{gid}'")
         conn.execute("DROP TABLE IF EXISTS reserva, viaje, token_correo, remitente_seguro, mensaje_revision,"
-            " membresia, auditoria, clave_operacion, novedad CASCADE")
+            " membresia, auditoria, clave_operacion, novedad, preferencia_agencia, caso CASCADE")
         aplicar_esquemas(conn)
 
 

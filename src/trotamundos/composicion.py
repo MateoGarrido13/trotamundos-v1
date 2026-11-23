@@ -11,8 +11,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from collections.abc import Mapping
+
 from trotamundos.broker import Broker
-from trotamundos.config import ConfiguracionIngesta
+from trotamundos.config import ConfiguracionAgencias, ConfiguracionIngesta
+from trotamundos.dominio.agencias import IAgencia
+from trotamundos.dominio.puertos_casos import EntregaNovedadCaso
+from trotamundos.entrada.agencia import AdaptadorAgencia, MockAgencia
 from trotamundos.entrada.filtro_remitentes import FiltroWhitelist
 from trotamundos.entrada.ingesta import ServicioIngesta
 from trotamundos.orquestador.incorporacion import IncorporadorReservas
@@ -30,8 +35,22 @@ def ensamblar_correo(
     servicio_revision: ServicioRevision,
     incorporador: IncorporadorReservas,
     configuracion_ingesta: ConfiguracionIngesta | None = None,
+    entrega_casos: EntregaNovedadCaso | None = None,
 ) -> NodosCorreo:
-    ingesta = ServicioIngesta(broker, incorporador, configuracion_ingesta)
+    ingesta = ServicioIngesta(broker, incorporador, configuracion_ingesta, entrega_casos=entrega_casos)
     filtro = FiltroWhitelist(servicio_revision, ingesta)
     servicio_revision.liberador = filtro  # el Orquestador avisa y el filtro libera hacia la ingesta
     return NodosCorreo(filtro, ingesta)
+
+
+def ensamblar_agencias(
+    broker: Broker,
+    configuracion: ConfiguracionAgencias,
+    agencias: Mapping[str, IAgencia] | None = None,
+) -> AdaptadorAgencia:
+    """Registra un adaptador por cada agencia configurada (SPEC-REF-05). En el prototipo cada una
+    es un `MockAgencia`; una agencia nueva es un adaptador más en este registro, y el
+    Orquestador solo necesita conocer su nombre."""
+    registro = dict(agencias) if agencias is not None else {
+        nombre: MockAgencia(nombre) for nombre in configuracion.disponibles}
+    return AdaptadorAgencia(broker, registro, configuracion)

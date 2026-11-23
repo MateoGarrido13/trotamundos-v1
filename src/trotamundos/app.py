@@ -10,11 +10,12 @@ from fastapi import FastAPI
 from trotamundos.broker import Broker
 from trotamundos.config import Configuracion
 from trotamundos.dominio.registro_tipos import RegistroTipos
-from trotamundos.composicion import ensamblar_correo
+from trotamundos.composicion import ensamblar_agencias, ensamblar_correo
 from trotamundos.orquestador import api as api_viajes
-from trotamundos.orquestador import api_gestion, api_revision
+from trotamundos.orquestador import api_casos, api_gestion, api_revision
 from trotamundos.orquestador.archivado import tarea_periodica
 from trotamundos.orquestador.arranque import registrar_tipos
+from trotamundos.orquestador.casos import ServicioCasos
 from trotamundos.orquestador.gestion_reservas import GestionReservas, tarea_purga_claves
 from trotamundos.orquestador.incorporacion import IncorporadorReservas
 from trotamundos.orquestador.novedades import ServicioNovedades
@@ -34,10 +35,12 @@ def create_app(configuracion: Configuracion | None = None,
     repositorio = RepositorioViajes(base_viajes, registro)
     gestion = GestionReservas(base_viajes, registro, repositorio, configuracion=cfg.gestion)
     broker = Broker(cfg.broker)
+    casos = ServicioCasos(base_viajes, broker, cfg.agencias.disponibles, cfg.agencias)
     servicio_revision = ServicioRevision(
         RepositorioRevision(base_viajes, cfg.revision.tope_pendientes), cfg.revision)
     nodos_correo = ensamblar_correo(
-        broker, servicio_revision, IncorporadorReservas(repositorio, registro), cfg.ingesta)
+        broker, servicio_revision, IncorporadorReservas(repositorio, registro), cfg.ingesta,
+        entrega_casos=casos)
 
     @asynccontextmanager
     async def ciclo_de_vida(_: FastAPI):
@@ -58,11 +61,14 @@ def create_app(configuracion: Configuracion | None = None,
     app.state.repositorio = repositorio
     app.state.servicio_revision = servicio_revision
     app.state.gestion = gestion
+    app.state.casos = casos
+    app.state.adaptador_agencia = ensamblar_agencias(broker, cfg.agencias)
     app.state.novedades = ServicioNovedades(base_viajes, registro)
     app.state.nodos_correo = nodos_correo
     app.include_router(api_viajes.router)
     app.include_router(api_revision.router)
     app.include_router(api_gestion.router)
+    app.include_router(api_casos.router)
 
     @app.get("/salud")
     def salud() -> dict[str, str]:
