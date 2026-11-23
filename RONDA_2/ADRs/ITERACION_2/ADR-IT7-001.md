@@ -1,4 +1,4 @@
-# ADR-IT2-001 — Filtrado de inyección de prompt y alcance acotado al propósito de REF-07
+# ADR-IT7-001 — Filtrado de inyección de prompt y alcance acotado al propósito de REF-07
 
 ## Contexto
 
@@ -27,5 +27,5 @@ El Asistente Virtual de primera ronda (ITERACION_1) interpreta intenciones del v
 
 ## Relación con otros ADRs
 
-- `ADR-IT1-003`: Clasificación en dos niveles y delegación asíncrona al Adaptador de agencia. El filtrado de este ADR ocurre antes de la clasificación.
-- `ADR-IT2-002`: Cota de ejecución de 35 segundos en `IMotorConversacional`. El filtrado ocurre antes de la cota de espera.
+- `ADR-IT6-003`: Clasificación en dos niveles y delegación asíncrona al Adaptador de agencia. El filtrado de este ADR ocurre antes de la clasificación.
+- `ADR-IT7-002`: Cota de ejecución de 35 segundos en `IMotorConversacional`. El filtrado ocurre antes de la cota de espera.

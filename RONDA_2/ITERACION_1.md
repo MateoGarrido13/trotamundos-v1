@@ -260,18 +260,18 @@ Decisiones de diseño registradas en [ADRs/ITERACION_1](ADRs/ITERACION_1/), just
 
 | ID | Decisión | Estado |
 | --- | --- | --- |
-| ADR-IT1-001 | Módulo de Asistente Virtual en nodos propios, desacoplado de los nodos de cotización | aceptado |
-| ADR-IT1-002 | Resolución de primer nivel reutilizando las operaciones autorizadas e idempotentes del Orquestador de viajes | aceptado |
-| ADR-IT1-003 | Escalamiento de casos complejos del Asistente Virtual a la agencia preferida mediante la cola de casos de ayuda y el Adaptador de agencia | aceptado |
-| ADR-IT1-004 | Contrato `IMotorConversacional` (ACL) con cota de espera y degradación a menú guiado | aceptado |
-| ADR-IT1-005 | Acceso directo del Asistente Virtual a los datos o a la API de la agencia | rechazado |
+| ADR-IT6-001 | Módulo de Asistente Virtual en nodos propios, desacoplado de los nodos de cotización | aceptado |
+| ADR-IT6-002 | Resolución de primer nivel reutilizando las operaciones autorizadas e idempotentes del Orquestador de viajes | aceptado |
+| ADR-IT6-003 | Escalamiento de casos complejos del Asistente Virtual a la agencia preferida mediante la cola de casos de ayuda y el Adaptador de agencia | aceptado |
+| ADR-IT6-004 | Contrato `IMotorConversacional` (ACL) con cota de espera y degradación a menú guiado | aceptado |
+| ADR-IT6-005 | Acceso directo del Asistente Virtual a los datos o a la API de la agencia | rechazado |
 
 ## Paso 7. Analizar y revisar el purpose
 
 | Id del goal | Estado | Una oración |
 | --- | --- | --- |
-| `REF-07` | Completely | El Módulo de Asistente Virtual corre en nodos propios detrás del API Gateway ([ADR-IT1-001](ADRs/ITERACION_1/ADR-IT1-001.md)), interpreta intenciones detrás de `IMotorConversacional` con cota de tiempo y degradación a menú guiado ([ADR-IT1-004](ADRs/ITERACION_1/ADR-IT1-004.md)), resuelve en primer nivel las consultas de estado y reprogramaciones menores a través de las operaciones autorizadas e idempotentes del Orquestador ([ADR-IT1-002](ADRs/ITERACION_1/ADR-IT1-002.md)) y delega únicamente los casos complejos a la agencia preferida por la cola de casos de ayuda y el Adaptador de agencia ([ADR-IT1-003](ADRs/ITERACION_1/ADR-IT1-003.md)). |
-| `QA-DIS-02` | Completely | Cuando ningún proveedor de IA está disponible, el asistente muestra el número de contacto de la agencia de viajes preferida del usuario mediante degradación elegante ([ADR-IT1-004](ADRs/ITERACION_1/ADR-IT1-004.md)). |
+| `REF-07` | Completely | El Módulo de Asistente Virtual corre en nodos propios detrás del API Gateway ([ADR-IT6-001](ADRs/ITERACION_1/ADR-IT6-001.md)), interpreta intenciones detrás de `IMotorConversacional` con cota de tiempo y degradación a menú guiado ([ADR-IT6-004](ADRs/ITERACION_1/ADR-IT6-004.md)), resuelve en primer nivel las consultas de estado y reprogramaciones menores a través de las operaciones autorizadas e idempotentes del Orquestador ([ADR-IT6-002](ADRs/ITERACION_1/ADR-IT6-002.md)) y delega únicamente los casos complejos a la agencia preferida por la cola de casos de ayuda y el Adaptador de agencia ([ADR-IT6-003](ADRs/ITERACION_1/ADR-IT6-003.md)). |
+| `QA-DIS-02` | Completely | Cuando ningún proveedor de IA está disponible, el asistente muestra el número de contacto de la agencia de viajes preferida del usuario mediante degradación elegante ([ADR-IT6-004](ADRs/ITERACION_1/ADR-IT6-004.md)). |
 | `QA-PER-05` | Partially | La cota de 35 segundos para responder al viajero está prevista pero no se garantiza para tareas complejas como reprogramaciones, que pueden exceder esa cota. Queda para ITERACION_2. |
 | `QA-SEG-04` | Not Yet | El rechazo de la inyección de prompt y el alcance acotado al propósito de `REF-07` quedan para ITERACION_2. |
 
@@ -279,11 +279,11 @@ Decisiones de diseño registradas en [ADRs/ITERACION_1](ADRs/ITERACION_1/), just
 
 | Id | Qué estaba abierto al inicio de esta ronda | Cómo lo cierra la iteración 6 |
 | --- | --- | --- |
-| `REF-07` | Dónde se despliega el bot conversacional sin degradar los tiempos de respuesta ni la disponibilidad del sistema existente. | Módulo de Asistente Virtual en nodos propios sin estado detrás del API Gateway, separado de los nodos del Orquestador ([ADR-IT1-001](ADRs/ITERACION_1/ADR-IT1-001.md)). |
-| `REF-07` | Cómo resuelve el primer nivel (consultas de estado, reprogramaciones y problemas menores) sin abrir un segundo camino de acceso a los datos ni saltear permisos. | El bot traduce la intención en llamadas a las operaciones idempotentes y autorizadas del Orquestador, con identidad del actor, clave de operación, control de acceso y auditoría en la misma transacción ([ADR-IT1-002](ADRs/ITERACION_1/ADR-IT1-002.md)), rechazando el acceso directo a los datos y a la API de la agencia ([ADR-IT1-005](ADRs/ITERACION_1/ADR-IT1-005.md)). |
-| `REF-07` | Qué es un caso complejo y por dónde se delega a la agencia de viajes preferida. | Clasificación explícita en dos niveles y delegación asíncrona por la cola de casos de ayuda hacia el Adaptador de agencia, con el resumen del diálogo y la reserva afectada ([ADR-IT1-003](ADRs/ITERACION_1/ADR-IT1-003.md)). |
-| `REF-07` | Qué pasa con el soporte si el motor de lenguaje natural se demora o falla. | Contrato `IMotorConversacional` (ACL) con cota de espera y degradación a menú guiado de primer nivel, sin Retry bloqueante ([ADR-IT1-004](ADRs/ITERACION_1/ADR-IT1-004.md)). |
-| `QA-DIS-02` | Qué pasa cuando ningún proveedor de IA está disponible. | Degradación elegante: el asistente muestra el número de contacto de la agencia de viajes preferida sin dejar al usuario sin respuesta ([ADR-IT1-004](ADRs/ITERACION_1/ADR-IT1-004.md)). |
+| `REF-07` | Dónde se despliega el bot conversacional sin degradar los tiempos de respuesta ni la disponibilidad del sistema existente. | Módulo de Asistente Virtual en nodos propios sin estado detrás del API Gateway, separado de los nodos del Orquestador ([ADR-IT6-001](ADRs/ITERACION_1/ADR-IT6-001.md)). |
+| `REF-07` | Cómo resuelve el primer nivel (consultas de estado, reprogramaciones y problemas menores) sin abrir un segundo camino de acceso a los datos ni saltear permisos. | El bot traduce la intención en llamadas a las operaciones idempotentes y autorizadas del Orquestador, con identidad del actor, clave de operación, control de acceso y auditoría en la misma transacción ([ADR-IT6-002](ADRs/ITERACION_1/ADR-IT6-002.md)), rechazando el acceso directo a los datos y a la API de la agencia ([ADR-IT6-005](ADRs/ITERACION_1/ADR-IT6-005.md)). |
+| `REF-07` | Qué es un caso complejo y por dónde se delega a la agencia de viajes preferida. | Clasificación explícita en dos niveles y delegación asíncrona por la cola de casos de ayuda hacia el Adaptador de agencia, con el resumen del diálogo y la reserva afectada ([ADR-IT6-003](ADRs/ITERACION_1/ADR-IT6-003.md)). |
+| `REF-07` | Qué pasa con el soporte si el motor de lenguaje natural se demora o falla. | Contrato `IMotorConversacional` (ACL) con cota de espera y degradación a menú guiado de primer nivel, sin Retry bloqueante ([ADR-IT6-004](ADRs/ITERACION_1/ADR-IT6-004.md)). |
+| `QA-DIS-02` | Qué pasa cuando ningún proveedor de IA está disponible. | Degradación elegante: el asistente muestra el número de contacto de la agencia de viajes preferida sin dejar al usuario sin respuesta ([ADR-IT6-004](ADRs/ITERACION_1/ADR-IT6-004.md)). |
 | `QA-PER-05` | Responder al viajero en como máximo 35 segundos. | Se prevé la cota pero no se garantiza para tareas complejas como reprogramaciones, que pueden excederla. Queda para ITERACION_2. |
 | `QA-SEG-04` | No obedecer una inyección de prompt y responder solo dentro del propósito de `REF-07`. | Queda para ITERACION_2. |
 
@@ -291,15 +291,15 @@ Decisiones de diseño registradas en [ADRs/ITERACION_1](ADRs/ITERACION_1/), just
 
 | Driver | Qué se sacrifica | A cambio de |
 | --- | --- | --- |
-| `REF-07` | Un salto HTTP interno del Asistente al Orquestador y un grupo más de nodos para operar ([ADR-IT1-001](ADRs/ITERACION_1/ADR-IT1-001.md)). | Que una tormenta de chats no consuma nodos de la cotización del sistema existente. |
-| `REF-07` | El Asistente debe pedir confirmación antes de ejecutar una escritura y depende del Orquestador ([ADR-IT1-002](ADRs/ITERACION_1/ADR-IT1-002.md), [ADR-IT1-005](ADR-IT1-005.md)). | Un único punto de autorización, auditoría transaccional y validación polimórfica de reservas, sin riesgo de saltear permisos por chat. |
-| `REF-07` | Cuando el motor de lenguaje natural tarda o cae, el chat pasa de texto libre a menú guiado ([ADR-IT1-004](ADRs/ITERACION_1/ADR-IT1-004.md)). | Que el viajero nunca pierda el soporte de primer nivel ni la derivación a su agencia preferida. |
+| `REF-07` | Un salto HTTP interno del Asistente al Orquestador y un grupo más de nodos para operar ([ADR-IT6-001](ADRs/ITERACION_1/ADR-IT6-001.md)). | Que una tormenta de chats no consuma nodos de la cotización del sistema existente. |
+| `REF-07` | El Asistente debe pedir confirmación antes de ejecutar una escritura y depende del Orquestador ([ADR-IT6-002](ADRs/ITERACION_1/ADR-IT6-002.md), [ADR-IT6-005](ADRs/ITERACION_1/ADR-IT6-005.md)). | Un único punto de autorización, auditoría transaccional y validación polimórfica de reservas, sin riesgo de saltear permisos por chat. |
+| `REF-07` | Cuando el motor de lenguaje natural tarda o cae, el chat pasa de texto libre a menú guiado ([ADR-IT6-004](ADRs/ITERACION_1/ADR-IT6-004.md)). | Que el viajero nunca pierda el soporte de primer nivel ni la derivación a su agencia preferida. |
 
 ### Riesgos residuales
 
 | Riesgo | Registrado en | Por qué no cambia el estado |
 | --- | --- | --- |
-| Que el clasificador interprete como simple un caso que el viajero quería enviar a la agencia. | [ADR-IT1-003](ADRs/ITERACION_1/ADR-IT1-003.md) | La interfaz ofrece siempre la acción explícita "derivar a mi agencia" para escalar en un paso. |
+| Que el clasificador interprete como simple un caso que el viajero quería enviar a la agencia. | [ADR-IT6-003](ADRs/ITERACION_1/ADR-IT6-003.md) | La interfaz ofrece siempre la acción explícita "derivar a mi agencia" para escalar en un paso. |
 
 ### Cierre
 

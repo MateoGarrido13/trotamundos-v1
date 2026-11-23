@@ -13,7 +13,7 @@ Al incorporar el Módulo de Asistente Virtual (`REF-07`), se evaluó que el prop
 * `REF-04` y `REF-05`: un único camino de escritura polimórfica ([ADR-IT4-008](../../../RONDA_1/ADRs/ITERACION_4/ADR-IT4-008.md)) y desacoplamiento asíncrono de la agencia por el Broker ([ADR-IT4-010](../../../RONDA_1/ADRs/ITERACION_4/ADR-IT4-010.md), [ADR-IT4-014](../../../RONDA_1/ADRs/ITERACION_4/ADR-IT4-014.md)).
 
 ## Opciones Consideradas
-* Opción 1: El Módulo de Asistente Virtual delega todas las lecturas, reprogramaciones y aperturas de casos de agencia en el Orquestador de viajes ([ADR-IT1-002](ADR-IT1-002.md), [ADR-IT1-003](ADR-IT1-003.md)).
+* Opción 1: El Módulo de Asistente Virtual delega todas las lecturas, reprogramaciones y aperturas de casos de agencia en el Orquestador de viajes ([ADR-IT6-002](ADR-IT6-002.md), [ADR-IT6-003](ADR-IT6-003.md)).
 * Opción 2: Acceso directo del Módulo de Asistente Virtual a la Base de viajes y a la API externa de la agencia preferida.
 
 ## Resultado de la Decisión

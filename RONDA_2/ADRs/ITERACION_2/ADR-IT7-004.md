@@ -1,4 +1,4 @@
-# ADR-IT2-004 — Time-out y Circuit Breaker hacia los proveedores de modelo de IA
+# ADR-IT7-004 — Time-out y Circuit Breaker hacia los proveedores de modelo de IA
 
 ## Contexto
 
@@ -29,5 +29,5 @@
 
 ## Relación con otros ADRs
 
-- `ADR-IT2-002`: la cota de 35 segundos sigue siendo el máximo que espera el viajero. Este ADR impide que la llamada al proveedor consuma esa cota entera.
-- `ADR-IT1-004`: el número de contacto de `QA-DIS-02` ya estaba decidido. Aquí se fija cuándo se emite.
+- `ADR-IT7-002`: la cota de 35 segundos sigue siendo el máximo que espera el viajero. Este ADR impide que la llamada al proveedor consuma esa cota entera.
+- `ADR-IT6-004`: el número de contacto de `QA-DIS-02` ya estaba decidido. Aquí se fija cuándo se emite.

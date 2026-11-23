@@ -63,7 +63,7 @@ El paso 1 de la ronda está en [RONDA_1/ITERACION_1.md](../RONDA_1/ITERACION_1.m
 - **El escalamiento pasa por el Orquestador y no directo al Broker.** El Orquestador es el dueño del estado del caso y quien valida el permiso sobre ese itinerario, así que encolar desde el Asistente habría dejado casos sin estado persistido ni autorización.
 - **El motor de lenguaje es reemplazable y prescindible.** El sistema no admite que el soporte quede fuera de línea porque un tercero de NLP se demore, y el prototipo necesita poder correr con un clasificador determinístico. Las dos cosas se resuelven con el mismo contrato y la misma degradación.
 - **Rechazo de Retry contra el motor conversacional.** Hay un usuario esperando en una conversación interactiva, así que la cota vence hacia la respuesta por defecto en lugar de reintentar.
-- **El proveedor que no responde no consume los 35 segundos.** Time-out detecta la falla, libera el hilo y muestra el texto de `QA-DIS-02` antes de esa cota. Circuit Breaker, a la quinta falla consecutiva, pasa a Abierto y esa misma respuesta sale en 0 ms hasta que el proveedor se recupere ([ADR-IT2-004](ADRs/ITERACION_2/ADR-IT2-004.md)).
+- **El proveedor que no responde no consume los 35 segundos.** Time-out detecta la falla, libera el hilo y muestra el texto de `QA-DIS-02` antes de esa cota. Circuit Breaker, a la quinta falla consecutiva, pasa a Abierto y esa misma respuesta sale en 0 ms hasta que el proveedor se recupere ([ADR-IT7-004](ADRs/ITERACION_2/ADR-IT7-004.md)).
 
 Prototipo throwaway: ninguno por ahora.
 
@@ -74,7 +74,7 @@ Cuatro decisiones fijan este paso:
 - **El Módulo de Asistente Virtual mantiene nodos propios sin estado**, detrás del API Gateway. No comparte nodos con la cotización ni accede de forma directa a ninguna base de datos.
 - **El primer nivel reusa las operaciones del Orquestador de viajes.** Consultar el estado de un viaje/reserva o aplicar una reprogramación menor por chat ejecuta exactamente los mismos métodos, permisos, clave de idempotencia y auditoría transaccional de la Ronda 1.
 - **Los casos complejos se delegan por la ruta asíncrona del Adaptador de agencia.** Cuando el Asistente detecta un caso complejo o el viajero pide hablar con su agencia, registra el caso en el Orquestador adjuntando el resumen estructurado del diálogo; el Orquestador lo publica en la cola de casos de ayuda y el Adaptador de agencia lo entrega con Retry.
-- **La interpretación de lenguaje natural se aísla detrás de `IMotorConversacional`.** Si el proveedor de modelo no responde, el time-out muestra el texto de `QA-DIS-02` antes de los 35 segundos. Tras cinco time-out consecutivos, el Circuit Breaker corta las llamadas y ese texto sale en 0 ms ([ADR-IT2-004](ADRs/ITERACION_2/ADR-IT2-004.md)).
+- **La interpretación de lenguaje natural se aísla detrás de `IMotorConversacional`.** Si el proveedor de modelo no responde, el time-out muestra el texto de `QA-DIS-02` antes de los 35 segundos. Tras cinco time-out consecutivos, el Circuit Breaker corta las llamadas y ese texto sale en 0 ms ([ADR-IT7-004](ADRs/ITERACION_2/ADR-IT7-004.md)).
 
 ### Qué se agrega y dónde va
 
@@ -113,24 +113,24 @@ Decisiones de diseño registradas en [ADRs/ITERACION_1](ADRs/ITERACION_2/), just
 
 | ID | Decisión | Estado |
 | --- | --- | --- |
-| ADR-IT2-001 | Filtrado de inyección de prompt y alcance acotado al propósito de `REF-07` | aceptado |
-| ADR-IT2-002 | Cota de ejecución de 35 segundos en `IMotorConversacional` con degradación a menú guiado | aceptado |
-| ADR-IT2-003 | Clasificación en dos niveles y delegación asíncrona de casos complejos al Adaptador de agencia | aceptado |
-| ADR-IT2-004 | Time-out y Circuit Breaker hacia los proveedores de modelo de IA, con el texto de `QA-DIS-02` antes de los 35 segundos | aceptado |
+| ADR-IT7-001 | Filtrado de inyección de prompt y alcance acotado al propósito de `REF-07` | aceptado |
+| ADR-IT7-002 | Cota de ejecución de 35 segundos en `IMotorConversacional` con degradación a menú guiado | aceptado |
+| ADR-IT7-003 | Clasificación en dos niveles y delegación asíncrona de casos complejos al Adaptador de agencia | aceptado |
+| ADR-IT7-004 | Time-out y Circuit Breaker hacia los proveedores de modelo de IA, con el texto de `QA-DIS-02` antes de los 35 segundos | aceptado |
 
 ## Paso 7. Analizar y revisar el purpose
 
 | Id del goal | Estado | Una oración |
 | --- | --- | --- |
-| `QA-PER-05` | Completely | El time-out hacia el proveedor de modelo muestra el texto de `QA-DIS-02` y libera el hilo antes de los 35 segundos. Tras cinco time-out consecutivos, el Circuit Breaker corta esas llamadas y el mismo texto sale en 0 ms hasta que el proveedor se recupere ([ADR-IT2-004](ADRs/ITERACION_2/ADR-IT2-004.md), [ADR-IT2-002](ADRs/ITERACION_2/ADR-IT2-002.md)). |
-| `QA-SEG-04` | Completely | El módulo de filtrado de inyección de prompt intercepta mensajes fuera del propósito de `REF-07` y ofrece el número de contacto de la agencia de viajes preferida como alternativa para delegar los casos complejos ([ADR-IT2-001](ADRs/ITERACION_2/ADR-IT2-001.md)). |
+| `QA-PER-05` | Completely | El time-out hacia el proveedor de modelo muestra el texto de `QA-DIS-02` y libera el hilo antes de los 35 segundos. Tras cinco time-out consecutivos, el Circuit Breaker corta esas llamadas y el mismo texto sale en 0 ms hasta que el proveedor se recupere ([ADR-IT7-004](ADRs/ITERACION_2/ADR-IT7-004.md), [ADR-IT7-002](ADRs/ITERACION_2/ADR-IT7-002.md)). |
+| `QA-SEG-04` | Completely | El módulo de filtrado de inyección de prompt intercepta mensajes fuera del propósito de `REF-07` y ofrece el número de contacto de la agencia de viajes preferida como alternativa para delegar los casos complejos ([ADR-IT7-001](ADRs/ITERACION_2/ADR-IT7-001.md)). |
 
 ### Justificación del estado
 
 | Id | Qué estaba abierto al inicio de esta iteración | Cómo lo cierra la iteración 7 |
 | --- | --- | --- |
-| `QA-PER-05` | La cota de 35 segundos no estaba garantizada para tareas complejas como reprogramaciones. | Time-out con el texto de `QA-DIS-02` antes de los 35 segundos, y Circuit Breaker en 0 ms tras cinco fallas consecutivas ([ADR-IT2-004](ADRs/ITERACION_2/ADR-IT2-004.md)). |
-| `QA-SEG-04` | El asistente podía obedecer inyecciones de prompt o responder fuera del propósito de `REF-07`. | Filtrado de inyección de prompt, alcance acotado al propósito de `REF-07`, y oferta del número de contacto de la agencia de viajes preferida como alternativa ([ADR-IT2-001](ADRs/ITERACION_2/ADR-IT2-001.md)). |
+| `QA-PER-05` | La cota de 35 segundos no estaba garantizada para tareas complejas como reprogramaciones. | Time-out con el texto de `QA-DIS-02` antes de los 35 segundos, y Circuit Breaker en 0 ms tras cinco fallas consecutivas ([ADR-IT7-004](ADRs/ITERACION_2/ADR-IT7-004.md)). |
+| `QA-SEG-04` | El asistente podía obedecer inyecciones de prompt o responder fuera del propósito de `REF-07`. | Filtrado de inyección de prompt, alcance acotado al propósito de `REF-07`, y oferta del número de contacto de la agencia de viajes preferida como alternativa ([ADR-IT7-001](ADRs/ITERACION_2/ADR-IT7-001.md)). |
 
 ### Trade-offs aceptados
 
@@ -143,7 +143,7 @@ Decisiones de diseño registradas en [ADRs/ITERACION_1](ADRs/ITERACION_2/), just
 
 | Riesgo | Registrado en | Por qué no cambia el estado |
 | --- | --- | --- |
-| El menú guiado puede no cubrir una necesidad legítima del viajero que no encaje en las opciones de primer nivel. | [ADR-IT2-002](ADRs/ITERACION_2/ADR-IT2-002.md) | El usuario siempre puede optar por "derivar a mi agencia" para escalar a un caso complejo. |
+| El menú guiado puede no cubrir una necesidad legítima del viajero que no encaje en las opciones de primer nivel. | [ADR-IT7-002](ADRs/ITERACION_2/ADR-IT7-002.md) | El usuario siempre puede optar por "derivar a mi agencia" para escalar a un caso complejo. |
 
 ### Cierre
 

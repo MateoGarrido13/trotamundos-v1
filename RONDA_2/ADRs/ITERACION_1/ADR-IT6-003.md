@@ -14,9 +14,9 @@
 
 ## Opciones Consideradas
 * Opción 1: Clasificación explícita en dos niveles dentro del Módulo de Asistente Virtual:
-  1. **Primer nivel (resuelto sin agencia):** consultas de estado de viajes/reservas/novedades, alta o baja manual de actividades y reprogramaciones simples de fechas/datos sobre reservas editables ([ADR-IT1-002](ADR-IT1-002.md)).
+  1. **Primer nivel (resuelto sin agencia):** consultas de estado de viajes/reservas/novedades, alta o baja manual de actividades y reprogramaciones simples de fechas/datos sobre reservas editables ([ADR-IT6-002](ADR-IT6-002.md)).
   2. **Caso complejo (delegado a la agencia):** disputas de cobro o reembolso, cancelaciones o reprogramaciones de tramos encadenados con penalidad del proveedor, incidencias donde el proveedor externo no responde o el viajero solicita hablar con su agencia. En ese caso, el Asistente empaqueta el contexto de la conversación (reserva afectada, motivo y transcripción resumida) e invoca la apertura de caso en el Orquestador, que lo publica en la **cola de casos de ayuda** hacia el **Adaptador de agencia (`IAgencia`)**.
-* Opción 2: Que el Asistente Virtual llame de forma síncrona y directa a la API de la agencia cuando detecta un caso complejo ([ADR-IT1-005](ADR-IT1-005.md)).
+* Opción 2: Que el Asistente Virtual llame de forma síncrona y directa a la API de la agencia cuando detecta un caso complejo ([ADR-IT6-005](ADR-IT6-005.md)).
 * Opción 3: Derivar todas las conversaciones a la agencia sin resolver nada en el primer nivel.
 
 ## Resultado de la Decisión

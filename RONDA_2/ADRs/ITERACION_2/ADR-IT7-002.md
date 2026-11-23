@@ -1,4 +1,4 @@
-# ADR-IT2-002 — Cota de ejecución de 35 segundos en IMotorConversacional con degradación a menú guiado
+# ADR-IT7-002 — Cota de ejecución de 35 segundos en IMotorConversacional con degradación a menú guiado
 
 ## Contexto
 
@@ -18,7 +18,7 @@
 
 ## Decisión
 
-**Opción 1 elegida.** Se aplica una cota de espera en `IMotorConversacional` de como máximo 35 segundos para el viajero. Si el proveedor de modelo no responde, el time-out se agota antes de esa cota, se libera el hilo y el Asistente muestra el número de contacto de la agencia de viajes preferida (`QA-DIS-02`). El Circuit Breaker de [ADR-IT2-004](ADR-IT2-004.md) evita repetir esa espera.
+**Opción 1 elegida.** Se aplica una cota de espera en `IMotorConversacional` de como máximo 35 segundos para el viajero. Si el proveedor de modelo no responde, el time-out se agota antes de esa cota, se libera el hilo y el Asistente muestra el número de contacto de la agencia de viajes preferida (`QA-DIS-02`). El Circuit Breaker de [ADR-IT7-004](ADR-IT7-004.md) evita repetir esa espera.
 
 ## Consecuencias
 
@@ -27,5 +27,5 @@
 
 ## Relación con otros ADRs
 
-- `ADR-IT2-001`: Filtrado de inyección de prompt. El filtrado ocurre antes de la cota de espera.
-- `ADR-IT1-004`: Contrato `IMotorConversacional` con cota de espera y degradación a menú guiado (definido en ITERACION_1). Este ADR refina la cota específica de 35 segundos para `QA-PER-05`.
+- `ADR-IT7-001`: Filtrado de inyección de prompt. El filtrado ocurre antes de la cota de espera.
+- `ADR-IT6-004`: Contrato `IMotorConversacional` con cota de espera y degradación a menú guiado (definido en ITERACION_1). Este ADR refina la cota específica de 35 segundos para `QA-PER-05`.

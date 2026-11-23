@@ -40,7 +40,7 @@ Las decisiones se tomaron así:
 | **4** | 1 | Identidad regional, seguridad de login e itinerarios, gestión manual y agencia preferida | `QA-ESC-01`, `QA-SEG-01`, `QA-SEG-02`, `REF-04`, `REF-05`, `QA-PER-04*`, `REF-06`, `QA-USA-01` | 14 (11 aceptados, 3 rechazados) | [Iteración](RONDA_1/ITERACION_4.md) · [ADRs](RONDA_1/ADRs/ITERACION_4/) |
 | **5** | 1 | Camino de lectura analítico y experiencia móvil con GPS | `QA-PER-04*`, `REF-06`, `QA-USA-01` | 5 (3 aceptados, 2 rechazados) | [Iteración](RONDA_1/ITERACION_5.md) · [ADRs](RONDA_1/ADRs/ITERACION_5/) |
 | **6** | 2 | Asistente virtual / Chatbot de primer nivel y delegación a la agencia preferida | `REF-07`, `QA-DIS-02` | 5 (4 aceptados, 1 rechazado) | [Iteración](RONDA_2/ITERACION_1.md) · [ADRs](RONDA_2/ADRs/ITERACION_1/) |
-| **7** | 2 | Tiempo de respuesta y seguridad del asistente virtual | `QA-PER-05`, `QA-SEG-04` | 3 (3 aceptados, 0 rechazados) | [Iteración](RONDA_2/ITERACION_2.md) · [ADRs](RONDA_2/ADRs/ITERACION_2/) |
+| **7** | 2 | Tiempo de respuesta y seguridad del asistente virtual | `QA-PER-05`, `QA-SEG-04` | 4 (4 aceptados, 0 rechazados) | [Iteración](RONDA_2/ITERACION_2.md) · [ADRs](RONDA_2/ADRs/ITERACION_2/) |
 
 ## Contenido del repositorio
 

@@ -14,7 +14,7 @@ Cuando el viajero pide al Asistente Virtual (`REF-07`) consultar el estado de su
 
 ## Opciones Consideradas
 * Opción 1: El Módulo de Asistente Virtual **nunca accede a la Base de viajes**. Traduce la intención de primer nivel del usuario en una llamada a las operaciones existentes del Orquestador de viajes (consulta de viaje/novedades, `agregarReserva`, `actualizarReserva(id)`, `eliminarReserva(id)`), propagando la identidad verificada del usuario y una clave de operación asociada al turno de conversación. El Orquestador ejecuta `verificarPermiso`, valida el subtipo de `Reserva`, escribe con commit en dos fases y deja el asiento de auditoría en la misma transacción.
-* Opción 2: Que el Módulo de Asistente Virtual se conecte por JDBC directamente a la Base de viajes para leer estados y aplicar reprogramaciones ([ADR-IT1-005](ADR-IT1-005.md)).
+* Opción 2: Que el Módulo de Asistente Virtual se conecte por JDBC directamente a la Base de viajes para leer estados y aplicar reprogramaciones ([ADR-IT6-005](ADR-IT6-005.md)).
 
 ## Resultado de la Decisión
 Opción elegida: **"Opción 1: invocar al Orquestador de viajes propagando la identidad del actor y clave de operación"**, porque preserva al Orquestador como único dueño de la Base de viajes y garantiza por construcción que nadie pueda usar el chatbot para eludir los permisos de un itinerario compartido (`QA-SEG-02`). Si un participante sin permiso pide al bot reprogramar o agregar una actividad en un viaje grupal, el Módulo de control de acceso del Orquestador lo rechaza y audita exactamente igual que si lo hubiera hecho desde la grilla manual. Además, la clave de operación evita que un reintento del chat aplique dos veces la misma reprogramación.

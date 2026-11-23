@@ -1,4 +1,4 @@
-# ADR-IT2-003 — Clasificación en dos niveles y delegación asíncrona de casos complejos al Adaptador de agencia
+# ADR-IT7-003 — Clasificación en dos niveles y delegación asíncrona de casos complejos al Adaptador de agencia
 
 ## Contexto
 
@@ -27,5 +27,5 @@
 
 ## Relación con otros ADRs
 
-- `ADR-IT1-003`: Escalamiento de casos complejos del Asistente Virtual a la agencia preferida mediante la cola de casos de ayuda y el Adaptador de agencia (definido en ITERACION_1). Este ADR refina la clasificación en dos niveles para `QA-SEG-04`.
-- `ADR-IT2-001`: Filtrado de inyección de prompt. El filtrado ocurre antes de la clasificación en dos niveles.
+- `ADR-IT6-003`: Escalamiento de casos complejos del Asistente Virtual a la agencia preferida mediante la cola de casos de ayuda y el Adaptador de agencia (definido en ITERACION_1). Este ADR refina la clasificación en dos niveles para `QA-SEG-04`.
+- `ADR-IT7-001`: Filtrado de inyección de prompt. El filtrado ocurre antes de la clasificación en dos niveles.
