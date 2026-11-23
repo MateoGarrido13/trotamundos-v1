@@ -14,18 +14,17 @@ from datetime import date
 from typing import Annotated
 
 import psycopg
-from fastapi import FastAPI, Header, Query
+from fastapi import APIRouter, FastAPI, Header, Query
 from fastapi.responses import JSONResponse
 
 from trotamundos.analitica.consultas import AccesoDenegado, ErrorTiempoAgotado, ServicioConsultas
 
 
-def create_app(servicio: ServicioConsultas | None = None) -> FastAPI:
-    servicio = servicio or ServicioConsultas()
-    app = FastAPI(title="Trotamundos - consultas analíticas")
-    app.state.servicio = servicio
+def crear_router(servicio: ServicioConsultas) -> APIRouter:
+    """El endpoint del informe, para montarlo en la app principal (SPEC-COMP-01)."""
+    router = APIRouter()
 
-    @app.get("/analitica/informe")
+    @router.get("/analitica/informe")
     async def informe(desde: Annotated[date, Query()], hasta: Annotated[date, Query()],
                       actor: Annotated[str, Header(alias="X-Viajero-Id")],
                       destino: str | None = None, tipo_reserva: str | None = None):
@@ -39,6 +38,15 @@ def create_app(servicio: ServicioConsultas | None = None) -> FastAPI:
             return JSONResponse({"error": "rango_invalido", "detalle": str(e)}, status_code=422)
         except psycopg.OperationalError:
             return JSONResponse({"error": "base_analitica_no_disponible"}, status_code=503)
+
+    return router
+
+
+def create_app(servicio: ServicioConsultas | None = None) -> FastAPI:
+    servicio = servicio or ServicioConsultas()
+    app = FastAPI(title="Trotamundos - consultas analíticas")
+    app.state.servicio = servicio
+    app.include_router(crear_router(servicio))
 
     @app.get("/salud")
     def salud() -> dict[str, str]:

@@ -57,9 +57,11 @@ def _objeto(cuerpo: Any, campo: str | None = None) -> dict:
     return valor
 
 
-def _serializar(viaje) -> dict:
+def _serializar(request: Request, viaje) -> dict:
+    # SPEC-COMP-01, regla 8: el `tipo` es el código del registro, no el nombre de la clase.
+    nombres = {clase: nombre for nombre, clase in request.app.state.registro_tipos.tipos().items()}
     return {"id": viaje.id, "estado": viaje.estado, "reservas": [{
-        "identificador": r.identificador, "tipo": type(r).__name__, "inicio": r.inicio.isoformat(),
+        "identificador": r.identificador, "tipo": nombres.get(type(r)), "inicio": r.inicio.isoformat(),
         "fin": r.fin.isoformat(), "estado": r.estado.value, "lugar": r.lugar, "origen": r.origen.value,
         "creado_por": r.creado_por, "resumen": r.resumen()} for r in viaje.reservas]}
 
@@ -111,7 +113,7 @@ async def vista_itinerario(request: Request, itinerario_id: str, actor: Actor):
         return JSONResponse(ACCESO_DENEGADO, status_code=403)
     except ErrorBaseNoDisponible:
         raise HTTPException(status_code=503, detail="Servicio no disponible") from None
-    return [_serializar(v) for v in viajes]
+    return [_serializar(request, v) for v in viajes]
 
 
 @router.get("/{itinerario_id}/novedades")

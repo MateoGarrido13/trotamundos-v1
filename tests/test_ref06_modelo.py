@@ -62,7 +62,7 @@ def test_el_broker_manda_a_muertos_lo_que_el_publicador_no_pudo_encolar(cfg_brok
 def test_la_base_analitica_es_una_base_distinta_de_las_de_viajes(analitica_limpia, bases_limpias):
     assert analitica_limpia.dsn not in (bases_limpias.viajes_primaria, bases_limpias.viajes_pasiva)
     with conectar(analitica_limpia.dsn) as c:
-        assert c.execute("SELECT current_database()").fetchone()[0] == "analitica"
+        assert c.execute("SELECT current_database()").fetchone()[0] == "trotamundos_test"  # SPEC-COMP-01: base de test; la separación es el DSN (otra instancia)
         tablas = {f[0] for f in c.execute(
             "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'").fetchall()}
     assert tablas == {"evento", "contador"}  # sin cuentas, correos ni credenciales

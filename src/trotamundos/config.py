@@ -27,11 +27,11 @@ class ConfiguracionBroker:
 class ConfiguracionBases:
     viajes_primaria: str = _env(
         "TROTA_DSN_VIAJES_PRIMARIA",
-        "postgresql://trotamundos:trotamundos@localhost:5433/viajes_primaria",
+        "postgresql://trotamundos:trotamundos@localhost:5433/trotamundos_dev",
     )
     viajes_pasiva: str = _env(
         "TROTA_DSN_VIAJES_PASIVA",
-        "postgresql://trotamundos:trotamundos@localhost:5434/viajes_pasiva",
+        "postgresql://trotamundos:trotamundos@localhost:5434/trotamundos_dev",
     )
     # SPEC-REF-01 / ADR-IT2-005: errores de conexión consecutivos que disparan la conmutación.
     # La spec lo deja [sin especificar]; 3 es la propuesta del plan, a confirmar.
@@ -93,7 +93,7 @@ class ConfiguracionAgencias:
 @dataclass(frozen=True)
 class ConfiguracionAnalitica:
     # SPEC-REF-06, «Parámetros Configurables».
-    dsn: str = _env("TROTA_DSN_ANALITICA", "postgresql://trotamundos:trotamundos@localhost:5435/analitica")
+    dsn: str = _env("TROTA_DSN_ANALITICA", "postgresql://trotamundos:trotamundos@localhost:5435/trotamundos_dev")
     # Tamaño máximo de la quinta cola: 1.000 eventos (5 en los tests).
     tamano_cola_eventos: int = int(_env("TROTA_COLA_EVENTOS_MAX", "1000"))
     # Reintentos de la publicación del Orquestador: 1 s, 2 s y 4 s.

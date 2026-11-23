@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from typing import Annotated, Any
 
-from fastapi import Body, FastAPI, Header, HTTPException
+from fastapi import APIRouter, Body, FastAPI, Header, HTTPException
 
 from trotamundos.asistente.asistente import ModuloAsistente
 
@@ -25,11 +25,11 @@ def _texto(cuerpo: Any, campo: str) -> str:
     return valor
 
 
-def create_app(modulo: ModuloAsistente) -> FastAPI:
-    app = FastAPI(title="Trotamundos - Asistente virtual")
-    app.state.modulo = modulo
+def crear_router(modulo: ModuloAsistente) -> APIRouter:
+    """Los endpoints del asistente, para montarlos en la app principal (SPEC-COMP-01)."""
+    router = APIRouter()
 
-    @app.post("/asistente/turno")
+    @router.post("/asistente/turno")
     async def turno(actor: Actor, cuerpo: Annotated[Any, Body()]) -> dict:
         itinerario = _texto(cuerpo, "itinerario_id")
         mensaje = cuerpo.get("mensaje")
@@ -38,13 +38,21 @@ def create_app(modulo: ModuloAsistente) -> FastAPI:
         r = await modulo.turno(actor, itinerario, mensaje, cuerpo.get("contexto"))
         return r.a_dict()
 
-    @app.post("/asistente/accion")
+    @router.post("/asistente/accion")
     async def accion(actor: Actor, cuerpo: Annotated[Any, Body()]) -> dict:
         itinerario = _texto(cuerpo, "itinerario_id")
         if not isinstance(cuerpo.get("accion"), dict):
             raise HTTPException(status_code=422, detail="Falta `accion`")
         r = await modulo.accion(actor, itinerario, cuerpo["accion"], cuerpo.get("contexto"))
         return r.a_dict()
+
+    return router
+
+
+def create_app(modulo: ModuloAsistente) -> FastAPI:
+    app = FastAPI(title="Trotamundos - Asistente virtual")
+    app.state.modulo = modulo
+    app.include_router(crear_router(modulo))
 
     @app.get("/salud")
     def salud() -> dict[str, str]:

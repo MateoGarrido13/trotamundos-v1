@@ -7,7 +7,7 @@
 Autorizar y revocar llegan por el API Gateway, que identifica al titular con `X-Titular-Id`."""
 from __future__ import annotations
 
-from fastapi import FastAPI, Header, HTTPException, Response
+from fastapi import APIRouter, FastAPI, Header, HTTPException, Response
 from pydantic import BaseModel
 
 from trotamundos.entrada import api_agencia
@@ -19,25 +19,32 @@ class Consentimiento(BaseModel):
     token: str
 
 
-def create_app(gestor: GestorAutorizacion, adaptador_agencia: AdaptadorAgencia | None = None) -> FastAPI:
-    app = FastAPI(title="Trotamundos - nodos de entrada")
-    if adaptador_agencia is not None:  # listener del aviso de la agencia (SPEC-REF-05)
-        app.include_router(api_agencia.crear_router(adaptador_agencia))
+def crear_router(gestor: GestorAutorizacion) -> APIRouter:
+    """Autorizar y revocar el correo, para montarlos en la app principal (SPEC-COMP-01)."""
+    router = APIRouter()
 
     def _titular(x_titular_id: str | None) -> str:
         if not x_titular_id:
             raise HTTPException(status_code=401, detail="falta X-Titular-Id")
         return x_titular_id
 
-    @app.post("/correo/autorizacion", status_code=201)
+    @router.post("/correo/autorizacion", status_code=201)
     def autorizar(consentimiento: Consentimiento, x_titular_id: str | None = Header(default=None)):
         titular = _titular(x_titular_id)
         vence = gestor.autorizar(titular, consentimiento.token)
         return {"titular_id": titular, "vence": vence.isoformat()}
 
-    @app.delete("/correo/autorizacion", status_code=204)
+    @router.delete("/correo/autorizacion", status_code=204)
     def revocar(x_titular_id: str | None = Header(default=None)) -> Response:
         gestor.revocar(_titular(x_titular_id))
         return Response(status_code=204)
 
+    return router
+
+
+def create_app(gestor: GestorAutorizacion, adaptador_agencia: AdaptadorAgencia | None = None) -> FastAPI:
+    app = FastAPI(title="Trotamundos - nodos de entrada")
+    if adaptador_agencia is not None:  # listener del aviso de la agencia (SPEC-REF-05)
+        app.include_router(api_agencia.crear_router(adaptador_agencia))
+    app.include_router(crear_router(gestor))
     return app

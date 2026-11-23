@@ -1,8 +1,8 @@
 """Siembra datos de demo en las bases de desarrollo: cuentas, itinerario compartido y un viaje.
 
 Uso: .venv/bin/python scripts/sembrar_demo.py
-Es idempotente. Hasta que exista el alta de viajes por API (SPEC-REF-08) es la única forma de
-tener un itinerario sobre el cual operar."""
+Es idempotente. Desde SPEC-COMP-01 ya no hace falta: un viaje se crea con `POST /viajes`. Queda para
+armar rápido un itinerario con nombres conocidos (`familia`: ana organizadora, luis participante)."""
 from trotamundos.config import Configuracion
 from trotamundos.persistencia.base_viajes import BaseViajes
 from trotamundos.persistencia.repositorio_gestion import RepositorioGestion as R

@@ -67,9 +67,33 @@ class RepositorioGestion:
         return fila[0] if fila else None
 
     @staticmethod
-    def crear_viaje(c: psycopg.Connection, viaje_id: str, viajero_id: str, itinerario_id: str) -> None:
-        c.execute("INSERT INTO viaje (id, viajero_id, itinerario_id) VALUES (%s, %s, %s)",
-                  (viaje_id, viajero_id, itinerario_id))
+    def crear_viaje(c: psycopg.Connection, viaje_id: str, viajero_id: str, itinerario_id: str,
+                    nombre: str = "") -> None:
+        c.execute("INSERT INTO viaje (id, viajero_id, itinerario_id, nombre) VALUES (%s, %s, %s, %s)",
+                  (viaje_id, viajero_id, itinerario_id, nombre))
+
+    # --- membresías (SPEC-COMP-01) -------------------------------------------------
+    @staticmethod
+    def quitar_membresia(c: psycopg.Connection, itinerario_id: str, cuenta_id: str) -> None:
+        c.execute("DELETE FROM membresia WHERE itinerario_id = %s AND cuenta_id = %s",
+                  (itinerario_id, cuenta_id))
+
+    @staticmethod
+    def contar_organizadores(c: psycopg.Connection, itinerario_id: str) -> int:
+        return c.execute("SELECT count(*) FROM membresia WHERE itinerario_id = %s AND rol = 'organizador'",
+                         (itinerario_id,)).fetchone()[0]
+
+    @staticmethod
+    def miembros(c: psycopg.Connection, itinerario_id: str) -> list[tuple[str, str]]:
+        return [(f[0], f[1]) for f in c.execute(
+            "SELECT cuenta_id, rol FROM membresia WHERE itinerario_id = %s ORDER BY cuenta_id",
+            (itinerario_id,)).fetchall()]
+
+    @staticmethod
+    def itinerarios_de(c: psycopg.Connection, cuenta_id: str) -> list[tuple[str, str]]:
+        return [(f[0], f[1]) for f in c.execute(
+            "SELECT itinerario_id, rol FROM membresia WHERE cuenta_id = %s ORDER BY itinerario_id",
+            (cuenta_id,)).fetchall()]
 
     @staticmethod
     def reserva(c: psycopg.Connection, reserva_id: str, bloquear: bool = True) -> FilaReserva | None:

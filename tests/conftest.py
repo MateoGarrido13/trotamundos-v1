@@ -1,3 +1,10 @@
+import os
+
+# SPEC-COMP-01, regla 9: los tests usan sus propias bases. Debe fijarse antes de importar la configuración.
+os.environ.setdefault("TROTA_DSN_VIAJES_PRIMARIA", "postgresql://trotamundos:trotamundos@localhost:5433/trotamundos_test")
+os.environ.setdefault("TROTA_DSN_VIAJES_PASIVA", "postgresql://trotamundos:trotamundos@localhost:5434/trotamundos_test")
+os.environ.setdefault("TROTA_DSN_ANALITICA", "postgresql://trotamundos:trotamundos@localhost:5435/trotamundos_test")
+
 from datetime import datetime
 
 import pytest
@@ -38,6 +45,7 @@ def analitica_limpia():
     """La Base analítica con las tablas recreadas; devuelve su configuración."""
     cfg = ConfiguracionAnalitica()
     with conectar_analitica(cfg.dsn, autocommit=True) as conn:
+        assert conn.execute("SELECT current_database()").fetchone()[0].endswith("_test")
         conn.execute("DROP TABLE IF EXISTS evento, contador CASCADE")
         aplicar_esquema_analitico(conn)
     return cfg
@@ -52,6 +60,9 @@ from trotamundos.persistencia.esquemas import aplicar_esquemas  # noqa: E402
 def limpiar_base(dsn: str) -> None:
     """Revierte transacciones preparadas colgadas y recrea las tablas (REF-01 y REF-02)."""
     with conectar(dsn, autocommit=True) as conn:
+        base = conn.execute("SELECT current_database()").fetchone()[0]
+        if not base.endswith("_test"):  # SPEC-COMP-01, regla 9: nunca vaciar una base de desarrollo
+            raise RuntimeError(f"los tests se niegan a borrar la base {base!r}")
         gids = conn.execute(
             "SELECT gid FROM pg_prepared_xacts WHERE database = current_database()").fetchall()
         for (gid,) in gids:
