@@ -13,7 +13,7 @@ from datetime import UTC, datetime
 
 from trotamundos.config import ConfiguracionCorreo
 from trotamundos.entrada.adaptador_correo import AdaptadorCorreo, ResultadoSondeo
-from trotamundos.entrada.api_correo import ErrorApiCorreo
+from trotamundos.entrada.api_correo import ErrorApiCorreo, TokenInvalido
 from trotamundos.entrada.gestor_autorizacion import GestorAutorizacion
 
 log = logging.getLogger(__name__)
@@ -40,6 +40,11 @@ class ProgramadorSondeo:
         for titular in self._gestor.titulares_autorizados():
             try:
                 resultados[titular] = await self._adaptador.sondear(titular, ahora)
+            except TokenInvalido as e:
+                # SPEC-COMP-04: la API rechazó el token; sin lectura hasta que el titular autorice de nuevo.
+                log.warning("token rechazado para %s: se revoca el acceso local", titular)
+                self._gestor.revocar(titular)
+                resultados[titular] = e
             except ErrorApiCorreo as e:
                 log.warning("sondeo fallido para %s: %s", titular, e)
                 resultados[titular] = e
