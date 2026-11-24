@@ -1,5 +1,7 @@
 # Propuesta de specs faltantes (borrador para decisión)
 
+> **Actualización 2026-11-23:** las specs propuestas ya están redactadas y aprobadas (`OK SPEC`, 2026-11-23): [COMP-02](SPEC-COMP-02.md) cliente web, [COMP-03](SPEC-COMP-03.md) cliente móvil, [COMP-04](SPEC-COMP-04.md) correo real, [COMP-05](SPEC-COMP-05.md) identidad regional, [COMP-06](SPEC-COMP-06.md) cotización, [COMP-07](SPEC-COMP-07.md) novedades de Booking, [COMP-08](SPEC-COMP-08.md) notificaciones. La A es [SPEC-COMP-01](SPEC-COMP-01.md), ya implementada.
+
 * **Fecha:** 2026-11-23
 * **Origen:** prueba de humo del prototipo (REF-01 a REF-07 implementadas, 568 tests en verde) y `planes/PLAN_MAESTRO.md`.
 
