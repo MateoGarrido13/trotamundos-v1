@@ -12,7 +12,8 @@ from collections.abc import Callable
 from datetime import UTC, datetime
 
 from trotamundos.dominio.identidad import TokenInvalido
-from trotamundos.identidad.gateway.firma import CABECERA_FIRMA, CABECERA_IDENTIDAD, es_publica, firmar
+from trotamundos.identidad.gateway.firma import (
+    CABECERA_FIRMA, CABECERA_IDENTIDAD, CABECERA_TITULAR, es_publica, firmar)
 from trotamundos.identidad.gateway.limitador import LimitadorTasa
 from trotamundos.identidad.tokens import ValidadorTokens
 
@@ -45,7 +46,7 @@ class Gateway:
             return await responder(send, 429, {"detail": "demasiados pedidos"})
         # Nada de lo que traiga el cliente en estas cabeceras vale: el Gateway las reescribe.
         cabeceras = [(k, v) for k, v in scope["headers"]
-                     if k.decode().lower() not in (CABECERA_IDENTIDAD, CABECERA_FIRMA)]
+                     if k.decode().lower() not in (CABECERA_IDENTIDAD, CABECERA_FIRMA, CABECERA_TITULAR)]
         if not es_publica(ruta):
             autorizacion = dict(scope["headers"]).get(b"authorization", b"").decode()
             if not autorizacion.lower().startswith("bearer "):
@@ -55,5 +56,6 @@ class Gateway:
             except TokenInvalido:
                 return await responder(send, 401, {"detail": "token inválido o vencido"})
             cabeceras += [(CABECERA_IDENTIDAD.encode(), cuenta_id.encode()),
+                          (CABECERA_TITULAR.encode(), cuenta_id.encode()),
                           (CABECERA_FIRMA.encode(), firmar(self._secreto, cuenta_id).encode())]
         await self.app({**scope, "headers": cabeceras}, receive, send)

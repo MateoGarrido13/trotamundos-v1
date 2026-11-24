@@ -65,6 +65,8 @@ async def test_AC_COMP_05_05_el_gateway_valida_sin_llamar_a_ninguna_region(app):
 
         class RegionCaida:
             def __getattr__(self, nombre):
+                if nombre == "cerrar_conexiones":  # lo consulta el cierre de la fixture, no el Gateway
+                    raise AttributeError(nombre)
                 raise AssertionError(f"el Gateway llamó a una región: {nombre}")
 
         for servicio in app.state.servicios_identidad.values():

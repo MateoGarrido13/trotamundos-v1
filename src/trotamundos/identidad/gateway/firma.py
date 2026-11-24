@@ -11,7 +11,12 @@ import hmac
 
 CABECERA_IDENTIDAD = "x-viajero-id"
 CABECERA_FIRMA = "x-gateway-firma"
-RUTAS_PUBLICAS = ("/salud", "/auth/", "/web")
+# Las rutas de correo (SPEC-REF-02, SPEC-COMP-04) identifican al titular con esta cabecera: el Gateway la
+# pisa con la cuenta del token, igual que `x-viajero-id`.
+CABECERA_TITULAR = "x-titular-id"
+# `/correo/oauth/callback` es adonde vuelve el navegador desde Google: no trae token. Lo protege el
+# `state` de un solo uso que emitió `POST /correo/oauth/iniciar` (SPEC-COMP-04).
+RUTAS_PUBLICAS = ("/salud", "/auth/", "/web", "/correo/oauth/callback")
 
 
 def es_publica(ruta: str) -> bool:
