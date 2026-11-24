@@ -114,6 +114,27 @@ PROHIBIDOS = [
     ("dominio/puertos_anuncios", "trotamundos.config", "los puertos solo dependen del dominio"),
     ("dominio/puertos_anuncios", "trotamundos.broker", "los puertos solo dependen del dominio"),
     ("entrada/ingesta", "trotamundos.orquestador", "la ingesta entrega por puertos del dominio"),
+    # PLAN-COMP-08
+    ("dominio/puertos_notificaciones", "trotamundos.config", "los puertos solo dependen del dominio"),
+    ("dominio/puertos_notificaciones", "trotamundos.broker", "los puertos solo dependen del dominio"),
+    ("dominio/puertos_notificaciones", "trotamundos.orquestador", "los puertos solo dependen del dominio"),
+    ("notificaciones/servicio", "trotamundos.notificaciones.canales", "AC-COMP-08-02: el servicio recibe los canales por contrato"),
+    ("orquestador/notificaciones", "trotamundos.notificaciones", "el publicador no conoce los canales"),
+    ("notificaciones", "trotamundos.persistencia", "SPEC-COMP-08: el servicio de notificaciones es independiente de esto"),
+    ("notificaciones", "trotamundos.orquestador", "SPEC-COMP-08: el servicio de notificaciones es independiente de esto"),
+    ("notificaciones", "trotamundos.entrada", "SPEC-COMP-08: el servicio de notificaciones es independiente de esto"),
+    ("notificaciones", "trotamundos.identidad", "SPEC-COMP-08: el servicio de notificaciones es independiente de esto"),
+    ("notificaciones", "trotamundos.analitica", "SPEC-COMP-08: el servicio de notificaciones es independiente de esto"),
+    ("notificaciones", "trotamundos.cotizacion", "SPEC-COMP-08: el servicio de notificaciones es independiente de esto"),
+    ("notificaciones", "trotamundos.asistente", "SPEC-COMP-08: el servicio de notificaciones es independiente de esto"),
+    ("notificaciones", "trotamundos.composicion", "SPEC-COMP-08: el servicio de notificaciones es independiente de esto"),
+    ("notificaciones/canales", "trotamundos.broker", "los canales no conocen el Broker"),
+    ("notificaciones/canales/email", "trotamundos.notificaciones.canales.whatsapp", "un canal no conoce a otro"),
+    ("notificaciones/canales/email", "trotamundos.notificaciones.canales.instagram", "un canal no conoce a otro"),
+    ("notificaciones/canales/whatsapp", "trotamundos.notificaciones.canales.email", "un canal no conoce a otro"),
+    ("notificaciones/canales/whatsapp", "trotamundos.notificaciones.canales.instagram", "un canal no conoce a otro"),
+    ("notificaciones/canales/instagram", "trotamundos.notificaciones.canales.email", "un canal no conoce a otro"),
+    ("notificaciones/canales/instagram", "trotamundos.notificaciones.canales.whatsapp", "un canal no conoce a otro"),
 ]
 
 

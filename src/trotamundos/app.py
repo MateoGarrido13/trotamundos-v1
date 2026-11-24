@@ -14,7 +14,6 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
 from trotamundos.broker import Broker, NombreCola
-from trotamundos.broker.broker import Mensaje
 from trotamundos.config import Configuracion, ConfiguracionIdentidad
 from trotamundos.dominio.registro_tipos import RegistroTipos
 from trotamundos.analitica import app as app_analitica
@@ -25,7 +24,7 @@ from trotamundos.analitica.proyector import Proyector
 from trotamundos.asistente import app as app_asistente
 from trotamundos.composicion import (
     ensamblar_agencias, ensamblar_asistente, ensamblar_booking, ensamblar_correo, ensamblar_cotizacion,
-    ensamblar_gmail)
+    ensamblar_gmail, ensamblar_notificaciones)
 from trotamundos.cotizacion import api as api_cotizacion
 from trotamundos.consumidores import Supervisor
 from trotamundos.entrada import app as app_entrada
@@ -116,7 +115,8 @@ def create_app(configuracion: Configuracion | None = None,
     registrar_tipos(registro, tipos_extra)
     base_viajes = BaseViajes.desde_config(cfg.bases)
     repositorio = RepositorioViajes(base_viajes, registro)
-    broker = Broker(cfg.broker, tamanos={NombreCola.EVENTOS_ANALITICOS: cfg.analitica.tamano_cola_eventos})
+    broker = Broker(cfg.broker, tamanos={NombreCola.EVENTOS_ANALITICOS: cfg.analitica.tamano_cola_eventos,
+                                         NombreCola.NOTIFICACIONES: cfg.notificaciones.tamano_cola_notificaciones})
     emisor = EmisorEventos(broker, cfg.analitica)  # SPEC-REF-06: eventos anonimizados tras cada commit
     gestion = GestionReservas(base_viajes, registro, repositorio, configuracion=cfg.gestion, emisor=emisor)
     casos = ServicioCasos(base_viajes, broker, cfg.agencias.disponibles, cfg.agencias)
@@ -144,16 +144,17 @@ def create_app(configuracion: Configuracion | None = None,
     supervisor = Supervisor()
     cotizacion = ensamblar_cotizacion(cfg.cotizacion)  # SPEC-COMP-06: sin Broker ni base
 
-    def publicar_notificacion(cuerpo: dict) -> None:
-        # SPEC-COMP-05, D6: el correo de recuperación y el aviso van a la cola de notificaciones.
-        broker.publicar(NombreCola.NOTIFICACIONES, Mensaje(id=cuerpo["id"], cuerpo=cuerpo))
-
-    servicios_identidad, red_regiones = ensamblar_regiones(cfg.identidad, publicar_notificacion)
-    # Un consumidor por cola. La de notificaciones no tiene consumidor: no hay spec que la use (QA-INT-02).
+    # SPEC-COMP-08: el correo de recuperación y el aviso de SPEC-COMP-05 van por el publicador, que
+    # reintenta con la cola llena; el servicio de notificaciones los entrega por su canal.
+    notificaciones = ensamblar_notificaciones(broker, cfg.notificaciones, cfg.ingesta)
+    servicios_identidad, red_regiones = ensamblar_regiones(cfg.identidad, notificaciones.publicador.publicar_desde_hilo)
+    # Un consumidor por cola; la de notificaciones tiene uno por canal (QA-INT-02).
     supervisor.registrar("novedades", nodos_correo.ingesta.procesar_uno)
     supervisor.registrar("correo", consumidor_correo.procesar_uno)
     supervisor.registrar("casos_ayuda", adaptador_agencia.procesar_uno)
     supervisor.registrar("eventos_analiticos", proyector.procesar_uno)
+    for nombre, procesar in notificaciones.servicio.consumidores().items():
+        supervisor.registrar(nombre, procesar)
 
     @asynccontextmanager
     async def ciclo_de_vida(_: FastAPI):
@@ -164,6 +165,7 @@ def create_app(configuracion: Configuracion | None = None,
                   asyncio.create_task(sondeo.ejecutar()),
                   asyncio.create_task(booking.adaptador.ejecutar_eco()),
                   asyncio.create_task(cotizacion.balanceador.ejecutar())]
+        notificaciones.publicador.enlazar_bucle(asyncio.get_running_loop())
         supervisor.iniciar()
         try:
             yield
@@ -195,6 +197,7 @@ def create_app(configuracion: Configuracion | None = None,
     app.state.nodos_correo = nodos_correo
     app.state.servicio_viajes = ServicioViajes(base_viajes)
     app.state.supervisor = supervisor
+    app.state.notificaciones = notificaciones
     app.state.servicios_identidad = servicios_identidad
     app.state.red_regiones = red_regiones
     app.state.api_correo = api_correo

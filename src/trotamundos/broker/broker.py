@@ -91,16 +91,31 @@ class Broker:
         self._avisar(Aviso("mensaje_muerto", cola, mensaje.id))
 
     # --- consumidores ----------------------------------------------------------
-    async def procesar_uno(self, cola: NombreCola, handler: Handler) -> ResultadoEntrega:
+    def _tomar(self, cola: NombreCola, donde: Callable[[Mensaje], bool] | None) -> Mensaje | None:
+        pendientes = self._colas[cola]
+        if donde is None:
+            return pendientes.popleft() if pendientes else None
+        for posicion, mensaje in enumerate(pendientes):
+            if donde(mensaje):
+                del pendientes[posicion]
+                return mensaje
+        return None
+
+    async def procesar_uno(self, cola: NombreCola, handler: Handler, *,
+                           donde: Callable[[Mensaje], bool] | None = None) -> ResultadoEntrega:
         """Toma el siguiente mensaje y se lo entrega al handler.
 
         Si el handler falla, reintenta con espera exponencial (base, 2*base, 4*base...).
         Agotados los reintentos, el mensaje va a la cola de mensajes muertos y se avisa
         a operaciones.
+
+        `donde` (SPEC-COMP-08): si se indica, toma el primer mensaje que lo cumple y deja los
+        demás en su lugar. Así cada consumidor atiende lo suyo (un canal por consumidor) con el
+        Retry y los mensajes muertos del propio Broker. Sin `donde` el comportamiento no cambia.
         """
-        if not self._colas[cola]:
+        mensaje = self._tomar(cola, donde)
+        if mensaje is None:
             return ResultadoEntrega.VACIA
-        mensaje = self._colas[cola].popleft()
         for intento in range(self._cfg.reintentos + 1):
             try:
                 await handler(mensaje)

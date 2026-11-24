@@ -20,7 +20,7 @@ from trotamundos.asistente.motor import IMotorConversacional, MotorSimulado
 from trotamundos.broker import Broker
 from trotamundos.config import (
     ConfiguracionAgencias, ConfiguracionAsistente, ConfiguracionBooking, ConfiguracionCotizacion,
-    ConfiguracionGmail, ConfiguracionIngesta)
+    ConfiguracionGmail, ConfiguracionIngesta, ConfiguracionNotificaciones)
 from trotamundos.cotizacion.adaptadores import AdaptadorAerolineas, AdaptadorArrendadoras, AdaptadorHoteles
 from trotamundos.cotizacion.apis_simuladas import ApiAerolineasSoap, ApiArrendadoras, ApiHoteles
 from trotamundos.cotizacion.balanceador import Balanceador
@@ -40,7 +40,10 @@ from trotamundos.entrada.gestor_autorizacion import GestorAutorizacion
 from trotamundos.entrada.gmail import ApiGmail, ClienteHttp, ServicioOAuth, crear_cliente_http
 from trotamundos.entrada.gmail import crear_router as crear_router_oauth
 from trotamundos.entrada.ingesta import ServicioIngesta
+from trotamundos.notificaciones.canales import descubrir as descubrir_canales
+from trotamundos.notificaciones.servicio import ServicioNotificaciones
 from trotamundos.orquestador.fachada_asistente import FachadaAsistente
+from trotamundos.orquestador.notificaciones import PublicadorNotificaciones
 from trotamundos.orquestador.incorporacion import IncorporadorReservas
 from trotamundos.orquestador.revision import ServicioRevision
 
@@ -163,3 +166,31 @@ def ensamblar_booking(broker: Broker, configuracion: ConfiguracionBooking) -> Si
     simulado = BookingSimulado(configuracion.clave_proveedor)
     adaptador = AdaptadorBooking(broker, configuracion, simulado)
     return SistemaBooking(adaptador, crear_router_booking(adaptador), simulado)
+
+
+@dataclass(frozen=True)
+class SistemaNotificaciones:
+    """Las notificaciones (SPEC-COMP-08): quien publica y quien entrega por canal, con los canales a la vista."""
+
+    publicador: PublicadorNotificaciones
+    servicio: ServicioNotificaciones
+    canales: dict[str, object]
+
+
+def ensamblar_notificaciones(
+    broker: Broker,
+    configuracion: ConfiguracionNotificaciones,
+    configuracion_ingesta: ConfiguracionIngesta | None = None,
+) -> SistemaNotificaciones:
+    """Descubre los canales del paquete (un archivo por canal) y los registra: sumar un canal no cambia
+    esta función. Es el único lugar que conecta al publicador con el servicio. Un nombre de canal
+    configurado que no existe rechaza el arranque."""
+    disponibles = descubrir_canales()
+    elegidos = configuracion.canales if configuracion.canales is not None else tuple(disponibles)
+    desconocidos = [c for c in elegidos if c not in disponibles]
+    if desconocidos:
+        raise ValueError(f"canales de notificación inexistentes: {', '.join(desconocidos)}")
+    canales = {nombre: disponibles[nombre]() for nombre in elegidos}
+    return SistemaNotificaciones(
+        PublicadorNotificaciones(broker, configuracion), ServicioNotificaciones(broker, canales, configuracion_ingesta),
+        canales)
