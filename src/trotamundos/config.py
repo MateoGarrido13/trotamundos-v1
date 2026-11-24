@@ -231,6 +231,18 @@ class ConfiguracionGmail:
 
 
 @dataclass(frozen=True)
+class ConfiguracionBooking:
+    """SPEC-COMP-07, «Parámetros Configurables». La clave compartida sale del entorno; vacía, ningún aviso
+    es válido (como `TROTA_CLAVE_AGENCIA`). `intervalo_eco_segundos` y `tope_listado_anuncios` son del plan."""
+
+    clave_proveedor: str = field(default=_env("TROTA_CLAVE_BOOKING", ""), repr=False)
+    tasa_avisos_por_origen: int = int(_env("TROTA_TASA_AVISOS", "50"))
+    retencion_anuncios_dias: int = int(_env("TROTA_RETENCION_ANUNCIOS_DIAS", "30"))
+    intervalo_eco_segundos: float = float(_env("TROTA_INTERVALO_ECO_BOOKING", "60"))
+    tope_listado_anuncios: int = int(_env("TROTA_TOPE_ANUNCIOS", "100"))
+
+
+@dataclass(frozen=True)
 class Configuracion:
     correo: ConfiguracionCorreo = field(default_factory=ConfiguracionCorreo)
     broker: ConfiguracionBroker = field(default_factory=ConfiguracionBroker)
@@ -243,6 +255,7 @@ class Configuracion:
     asistente: ConfiguracionAsistente = field(default_factory=ConfiguracionAsistente)
     cotizacion: ConfiguracionCotizacion = field(default_factory=ConfiguracionCotizacion)
     gmail: ConfiguracionGmail = field(default_factory=ConfiguracionGmail)
+    booking: ConfiguracionBooking = field(default_factory=ConfiguracionBooking)
     identidad: ConfiguracionIdentidad = field(default_factory=ConfiguracionIdentidad)
 
     def __post_init__(self) -> None:

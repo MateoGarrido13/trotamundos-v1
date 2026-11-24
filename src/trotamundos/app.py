@@ -22,7 +22,8 @@ from trotamundos.analitica.consultas import ServicioConsultas
 from trotamundos.analitica.proyector import Proyector
 from trotamundos.asistente import app as app_asistente
 from trotamundos.composicion import (
-    ensamblar_agencias, ensamblar_asistente, ensamblar_correo, ensamblar_cotizacion, ensamblar_gmail)
+    ensamblar_agencias, ensamblar_asistente, ensamblar_booking, ensamblar_correo, ensamblar_cotizacion,
+    ensamblar_gmail)
 from trotamundos.cotizacion import api as api_cotizacion
 from trotamundos.consumidores import Supervisor
 from trotamundos.entrada import app as app_entrada
@@ -41,8 +42,9 @@ from trotamundos.identidad.region.regiones import ensamblar_regiones
 from trotamundos.identidad.tokens import ValidadorTokens, clave_publica_hex
 from trotamundos.entrada.programador_sondeo import ProgramadorSondeo
 from trotamundos.orquestador import api as api_viajes
-from trotamundos.orquestador import api_casos, api_gestion, api_miembros, api_revision
+from trotamundos.orquestador import api_anuncios, api_casos, api_gestion, api_miembros, api_revision
 from trotamundos.orquestador.alta_viajes import ServicioViajes
+from trotamundos.orquestador.anuncios import ServicioAnuncios
 from trotamundos.orquestador.archivado import tarea_periodica
 from trotamundos.orquestador.arranque import registrar_tipos
 from trotamundos.orquestador.casos import ServicioCasos
@@ -118,9 +120,11 @@ def create_app(configuracion: Configuracion | None = None,
     casos = ServicioCasos(base_viajes, broker, cfg.agencias.disponibles, cfg.agencias)
     servicio_revision = ServicioRevision(
         RepositorioRevision(base_viajes, cfg.revision.tope_pendientes), cfg.revision)
+    anuncios = ServicioAnuncios(base_viajes, cfg.booking)  # SPEC-COMP-07: anuncios de Booking
     nodos_correo = ensamblar_correo(
         broker, servicio_revision, IncorporadorReservas(repositorio, registro, emisor), cfg.ingesta,
-        entrega_casos=casos)
+        entrega_casos=casos, entrega_anuncios=anuncios)
+    booking = ensamblar_booking(broker, cfg.booking)  # listener del aviso push; solo habla con el Broker
 
     # SPEC-COMP-01: correo (mock hasta que exista el adaptador real), consumidores y analítica.
     gestor_correo = GestorAutorizacion(
@@ -156,6 +160,7 @@ def create_app(configuracion: Configuracion | None = None,
                   asyncio.create_task(tarea_purga(servicio_revision, cfg.revision.intervalo_purga_segundos)),
                   asyncio.create_task(tarea_purga_claves(gestion, cfg.revision.intervalo_purga_segundos)),
                   asyncio.create_task(sondeo.ejecutar()),
+                  asyncio.create_task(booking.adaptador.ejecutar_eco()),
                   asyncio.create_task(cotizacion.balanceador.ejecutar())]
         supervisor.iniciar()
         try:
@@ -182,6 +187,8 @@ def create_app(configuracion: Configuracion | None = None,
     app.state.casos = casos
     app.state.adaptador_agencia = adaptador_agencia
     app.state.novedades = ServicioNovedades(base_viajes, registro, emisor=emisor)
+    app.state.anuncios = anuncios
+    app.state.booking = booking
     app.state.emisor_eventos = emisor
     app.state.nodos_correo = nodos_correo
     app.state.servicio_viajes = ServicioViajes(base_viajes)
@@ -198,6 +205,8 @@ def create_app(configuracion: Configuracion | None = None,
     app.include_router(api_revision.router)
     app.include_router(api_gestion.router)
     app.include_router(api_casos.router)
+    app.include_router(api_anuncios.router)
+    app.include_router(booking.router)
     app.include_router(api_miembros.router)
     app.include_router(api_agencia.crear_router(adaptador_agencia))
     app.include_router(app_entrada.crear_router(gestor_correo, al_revocar=gmail.al_revocar if gmail else None))

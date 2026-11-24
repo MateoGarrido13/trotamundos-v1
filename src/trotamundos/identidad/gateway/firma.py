@@ -16,7 +16,9 @@ CABECERA_FIRMA = "x-gateway-firma"
 CABECERA_TITULAR = "x-titular-id"
 # `/correo/oauth/callback` es adonde vuelve el navegador desde Google: no trae token. Lo protege el
 # `state` de un solo uso que emitió `POST /correo/oauth/iniciar` (SPEC-COMP-04).
-RUTAS_PUBLICAS = ("/salud", "/auth/", "/web", "/correo/oauth/callback")
+# `/proveedores/booking/avisos` es el listener de Booking (SPEC-COMP-07): una entrada pública que no pasa por el
+# Gateway; la protegen la clave compartida y el límite de tasa del propio listener.
+RUTAS_PUBLICAS = ("/salud", "/auth/", "/web", "/correo/oauth/callback", "/proveedores/booking/avisos")
 
 
 def es_publica(ruta: str) -> bool:
