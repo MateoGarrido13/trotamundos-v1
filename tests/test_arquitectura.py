@@ -97,6 +97,23 @@ PROHIBIDOS = [
     ("analitica", "trotamundos.identidad", "el camino analítico no lee la Base de cuentas"),
     ("persistencia", "trotamundos.identidad", "la persistencia no depende de las cuentas"),
     ("dominio/identidad", "trotamundos.config", "el dominio no depende de nadie"),
+    # PLAN-COMP-07
+    ("entrada/booking", "trotamundos.persistencia", "AC-COMP-07-09: el listener solo habla con el Broker"),
+    ("entrada/booking", "trotamundos.orquestador", "AC-COMP-07-09: el listener no llama al Orquestador"),
+    ("entrada/booking", "trotamundos.identidad", "el listener no pasa por el Gateway"),
+    ("entrada/booking", "trotamundos.cotizacion", "ADR-IT3-010: nodos propios, sin compartir con la cotización"),
+    ("entrada/booking", "trotamundos.analitica", "nodos propios"),
+    ("entrada/booking", "psycopg", "AC-COMP-07-09: el listener no escribe en una base"),
+    ("entrada/booking/tasa", "trotamundos", "el límite de tasa no depende de nadie"),
+    ("entrada/booking/aviso", "trotamundos", "el aviso y su traducción no dependen de nadie"),
+    ("entrada/booking/simulado", "trotamundos.broker", "Booking no conoce nuestro Broker"),
+    ("entrada/booking/simulado", "trotamundos.config", "Booking no conoce nuestra configuración"),
+    ("orquestador/anuncios", "trotamundos.entrada", "ADR-IT3-010: el contacto es el Broker"),
+    ("orquestador/anuncios", "trotamundos.broker", "el Orquestador guarda lo que la ingesta le entrega"),
+    ("orquestador/api_anuncios", "trotamundos.entrada", "ADR-IT3-010: el contacto es el Broker"),
+    ("dominio/puertos_anuncios", "trotamundos.config", "los puertos solo dependen del dominio"),
+    ("dominio/puertos_anuncios", "trotamundos.broker", "los puertos solo dependen del dominio"),
+    ("entrada/ingesta", "trotamundos.orquestador", "la ingesta entrega por puertos del dominio"),
 ]
 
 

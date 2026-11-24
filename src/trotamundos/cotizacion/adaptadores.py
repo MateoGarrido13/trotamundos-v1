@@ -44,6 +44,10 @@ class _AdaptadorBase:
     def traducir(self, mensaje: Any) -> tuple[Precio, ...]:  # pragma: no cover
         raise NotImplementedError
 
+    async def recibir_novedad(self, mensaje: Any) -> Any:
+        """`IProveedor.recibir_novedad` (SPEC-COMP-07): la cotización no recibe avisos de proveedores."""
+        raise NotImplementedError("los adaptadores de cotización no reciben novedades")
+
     async def _consultar(self, criterios: Criterios) -> tuple[Precio, ...] | None:
         if not await self.ping():  # Ping/Echo: sin eco no se pide el precio
             return None

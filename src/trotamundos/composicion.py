@@ -19,8 +19,8 @@ from trotamundos.asistente.asistente import ModuloAsistente
 from trotamundos.asistente.motor import IMotorConversacional, MotorSimulado
 from trotamundos.broker import Broker
 from trotamundos.config import (
-    ConfiguracionAgencias, ConfiguracionAsistente, ConfiguracionCotizacion, ConfiguracionGmail,
-    ConfiguracionIngesta)
+    ConfiguracionAgencias, ConfiguracionAsistente, ConfiguracionBooking, ConfiguracionCotizacion,
+    ConfiguracionGmail, ConfiguracionIngesta)
 from trotamundos.cotizacion.adaptadores import AdaptadorAerolineas, AdaptadorArrendadoras, AdaptadorHoteles
 from trotamundos.cotizacion.apis_simuladas import ApiAerolineasSoap, ApiArrendadoras, ApiHoteles
 from trotamundos.cotizacion.balanceador import Balanceador
@@ -28,9 +28,13 @@ from trotamundos.cotizacion.borde import CacheBorde
 from trotamundos.cotizacion.nodo import NodoCotizacion
 from trotamundos.cotizacion.servicio import ServicioCotizacion
 from trotamundos.dominio.agencias import IAgencia
+from trotamundos.dominio.puertos_anuncios import EntregaAnuncios
 from trotamundos.dominio.puertos_cotizacion import ICotizador
 from trotamundos.dominio.puertos_casos import EntregaNovedadCaso
 from trotamundos.entrada.agencia import AdaptadorAgencia, MockAgencia
+from trotamundos.entrada.booking.adaptador import AdaptadorBooking
+from trotamundos.entrada.booking.listener import crear_router as crear_router_booking
+from trotamundos.entrada.booking.simulado import BookingSimulado
 from trotamundos.entrada.filtro_remitentes import FiltroWhitelist
 from trotamundos.entrada.gestor_autorizacion import GestorAutorizacion
 from trotamundos.entrada.gmail import ApiGmail, ClienteHttp, ServicioOAuth, crear_cliente_http
@@ -53,8 +57,10 @@ def ensamblar_correo(
     incorporador: IncorporadorReservas,
     configuracion_ingesta: ConfiguracionIngesta | None = None,
     entrega_casos: EntregaNovedadCaso | None = None,
+    entrega_anuncios: EntregaAnuncios | None = None,
 ) -> NodosCorreo:
-    ingesta = ServicioIngesta(broker, incorporador, configuracion_ingesta, entrega_casos=entrega_casos)
+    ingesta = ServicioIngesta(broker, incorporador, configuracion_ingesta, entrega_casos=entrega_casos,
+                              entrega_anuncios=entrega_anuncios)
     filtro = FiltroWhitelist(servicio_revision, ingesta)
     servicio_revision.liberador = filtro  # el Orquestador avisa y el filtro libera hacia la ingesta
     return NodosCorreo(filtro, ingesta)
@@ -141,3 +147,19 @@ def ensamblar_gmail(
     cliente = cliente or crear_cliente_http()
     oauth = ServicioOAuth(gestor, cliente, configuracion)
     return SistemaGmail(ApiGmail(cliente, configuracion), oauth, crear_router_oauth(oauth), cliente)
+
+
+@dataclass(frozen=True)
+class SistemaBooking:
+    """El listener de Booking (SPEC-COMP-07), con el Booking simulado a la vista para inyectarle fallas."""
+
+    adaptador: AdaptadorBooking
+    router: APIRouter
+    simulado: BookingSimulado
+
+
+def ensamblar_booking(broker: Broker, configuracion: ConfiguracionBooking) -> SistemaBooking:
+    """Único lugar que conecta el listener con su API (simulada, `CON-02`). El listener solo conoce al Broker."""
+    simulado = BookingSimulado(configuracion.clave_proveedor)
+    adaptador = AdaptadorBooking(broker, configuracion, simulado)
+    return SistemaBooking(adaptador, crear_router_booking(adaptador), simulado)

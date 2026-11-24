@@ -15,12 +15,13 @@ from __future__ import annotations
 import asyncio
 import time
 from collections.abc import Awaitable, Callable
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 
 from trotamundos.broker import Broker, Mensaje, NombreCola, ResultadoEntrega
 from trotamundos.config import ConfiguracionIngesta
 from trotamundos.dominio.agencias import EstadoCaso
 from trotamundos.dominio.puertos_casos import EntregaNovedadCaso
+from trotamundos.dominio.puertos_anuncios import Anuncio, EntregaAnuncios
 from trotamundos.dominio.puertos_correo import EntregaOrquestador
 from trotamundos.dominio.reserva_normalizada import ReservaNormalizada
 
@@ -52,6 +53,13 @@ def _ahora_utc() -> datetime:
     return datetime.now(UTC)
 
 
+def _anuncio(cuerpo: dict) -> Anuncio:
+    a = cuerpo["anuncio"]
+    return Anuncio(id=a["id"], titulo=a["titulo"], destino=a["destino"], inicio=date.fromisoformat(a["inicio"]),
+                   fin=date.fromisoformat(a["fin"]), proveedor=a["proveedor"],
+                   detectado_en=datetime.fromisoformat(cuerpo["detectado_en"]))
+
+
 class ServicioIngesta:
     def __init__(
         self,
@@ -60,6 +68,7 @@ class ServicioIngesta:
         configuracion: ConfiguracionIngesta | None = None,
         *,
         entrega_casos: EntregaNovedadCaso | None = None,
+        entrega_anuncios: EntregaAnuncios | None = None,
         limitador: LimitadorTasa | None = None,
         reloj: Callable[[], datetime] = _ahora_utc,
     ) -> None:
@@ -67,6 +76,7 @@ class ServicioIngesta:
         self._broker = broker
         self._entrega = entrega
         self._entrega_casos = entrega_casos
+        self._entrega_anuncios = entrega_anuncios
         self._retencion = timedelta(days=cfg.retencion_ids_dias)
         self._limitador = limitador or LimitadorTasa(cfg.tasa_por_segundo)
         self._reloj = reloj
@@ -99,6 +109,11 @@ class ServicioIngesta:
             await self._limitador.esperar()
             await self._entrega_casos.aplicar_estado_caso(
                 mensaje.cuerpo["id_caso"], EstadoCaso(mensaje.cuerpo["estado"]))
+        elif origen == "anuncio":  # SPEC-COMP-07: un anuncio de Booking, visible a todos en «Novedades»
+            if self._entrega_anuncios is None:
+                raise RuntimeError("la ingesta no tiene a quién entregarle los anuncios")
+            await self._limitador.esperar()
+            await self._entrega_anuncios.guardar_anuncio(_anuncio(mensaje.cuerpo))
         else:
             raise ValueError(f"origen de novedad desconocido: {origen!r}")
         # Se marca como procesado recién después de entregar: si se marcara antes, el reintento

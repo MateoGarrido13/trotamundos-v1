@@ -19,13 +19,16 @@ class SinNodosDisponibles(Exception):
 
 
 class IProveedor(Protocol):
-    """`recibirNovedad` lo agrega SPEC-COMP-07 (PLAN-COMP-06, D3)."""
+    """El contrato común de todo proveedor (`ADR-IT3-004`). `recibir_novedad` es de SPEC-COMP-07 (PLAN-COMP-07,
+    D13): el aviso de un proveedor que anuncia algo. Los adaptadores de cotización no reciben avisos."""
 
     nombre: str
 
     async def ping(self) -> bool: ...
 
-    def traducir(self, mensaje: Any) -> tuple[Precio, ...]: ...
+    def traducir(self, mensaje: Any) -> Any: ...
+
+    async def recibir_novedad(self, mensaje: Any) -> Any: ...
 
 
 class ICotizador(Protocol):
