@@ -1,7 +1,7 @@
 # PLAN-COMP-04. Correo real (Gmail API)
 
 * **Spec asociada:** [SPEC-COMP-04](../specs/SPEC-COMP-04.md) (aprobada)
-* **Estado:** aprobado (`OK PLAN`, 2026-11-23)
+* **Estado:** terminado (`AC-COMP-04-10` queda como demo manual con credenciales reales de Google)
 * **Fecha:** 2026-11-23
 * **Incremento (Slice):** Slice 3 de [PLAN_MAESTRO.md](PLAN_MAESTRO.md)
 
