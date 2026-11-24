@@ -82,6 +82,21 @@ PROHIBIDOS = [
     ("entrada/gmail/mensajes", "httpx", "la traducción de mensajes no hace red"),
     ("entrada/gmail/api", "trotamundos.entrada.gestor_autorizacion", "la API de lectura no conoce al Gestor"),
     ("entrada/gmail/oauth", "trotamundos.entrada.gmail.api", "el consentimiento no lee el buzón"),
+    # PLAN-COMP-05
+    ("identidad/gateway", "trotamundos.identidad.region", "ADR-IT4-004: el Gateway no llama a ninguna región"),
+    ("identidad/gateway", "trotamundos.persistencia", "el Gateway no toca ninguna base"),
+    ("identidad/region", "trotamundos.identidad.gateway", "la región no conoce al Gateway"),
+    ("identidad", "trotamundos.orquestador", "el Orquestador y las cuentas no se conocen"),
+    ("identidad", "trotamundos.entrada", "nodos propios"),
+    ("identidad", "trotamundos.asistente", "nodos propios"),
+    ("identidad", "trotamundos.analitica", "nodos propios"),
+    ("identidad", "trotamundos.broker", "las cuentas publican por una función que recibe la composición"),
+    ("orquestador", "trotamundos.identidad", "el Orquestador no lee ni escribe ninguna Base de cuentas"),
+    ("entrada", "trotamundos.identidad", "nodos propios"),
+    ("asistente", "trotamundos.identidad", "el Asistente no lee ni escribe ninguna base"),
+    ("analitica", "trotamundos.identidad", "el camino analítico no lee la Base de cuentas"),
+    ("persistencia", "trotamundos.identidad", "la persistencia no depende de las cuentas"),
+    ("dominio/identidad", "trotamundos.config", "el dominio no depende de nadie"),
 ]
 
 

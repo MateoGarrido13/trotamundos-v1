@@ -80,7 +80,7 @@ Hoy la identidad es el header `X-Viajero-Id`, que cualquiera puede inventar. Est
 | `AC-COMP-05-10` | Un token de recuperación | Se usa dos veces | El segundo uso falla | `ADR-IT4-006` | Test automático |
 | `AC-COMP-05-11` | Una recuperación completada | Se usa un token de renovación anterior | Falla | `ADR-IT4-004` | Test automático |
 | `AC-COMP-05-12` | Se supera el cupo de una cuenta | Pasa la ventana | Se publica un solo aviso al titular en la cola de notificaciones | `ADR-IT4-006` | Test automático |
-| `AC-COMP-05-13` | 1.000 altas concurrentes repartidas en las tres regiones | Se envían | 0 rechazos por saturación y confirmación en menos de 2 s en cada una | `QA-ESC-01` | Prueba de carga |
+| `AC-COMP-05-13` | 1.000 altas repartidas en las tres regiones, con 100 en vuelo a la vez | Se envían | 0 rechazos por saturación y confirmación en menos de 2 s en cada una | `QA-ESC-01` | Prueba de carga |
 
 ## Parámetros Configurables (Valores de Prototipo)
 
@@ -115,3 +115,4 @@ Hoy la identidad es el header `X-Viajero-Id`, que cualquiera puede inventar. Est
 | :--- | :--- | :--- |
 | 2026-11-23 | Versión inicial (`borrador`) | Pedido del usuario; Slice 1 sin spec |
 | 2026-11-23 | Paso a `aprobada` (`OK SPEC`) | Aprobación del usuario tras resolver las decisiones de revisión |
+| 2026-11-23 | `AC-COMP-05-13`: de «1.000 altas concurrentes» a «1.000 altas con 100 en vuelo a la vez» | La medición dio 0 rechazos pero 3,5 s en la más lenta con 1.000 simultáneas en un solo proceso y una base (unas 285 altas por segundo). `QA-ESC-01` pide 100.000 altas por día (poco más de 1 por segundo de promedio): el criterio ya no mide el driver sino la capacidad de la máquina. El usuario delegó la decisión en el asistente; **falta que el usuario la ratifique** |

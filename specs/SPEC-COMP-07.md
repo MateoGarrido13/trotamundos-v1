@@ -90,9 +90,14 @@ A las 8 am los proveedores cargan sus viajes nuevos. El usuario los ve en la sec
 * Notificar al usuario por canal ([SPEC-COMP-08](SPEC-COMP-08.md)).
 * Reservar un viaje anunciado.
 
+## Decisiones tomadas
+
+1. **Qué es un aviso:** un **anuncio de viaje nuevo** (título, destino, fechas y proveedor) que ven todos los viajeros en «Novedades». No modifica reservas. Se guarda en una tabla propia `anuncio` del Orquestador y `GET /novedades/anuncios` los lista.
+
 ## Historial de Cambios
 
 | Fecha | Cambio | Motivo |
 | :--- | :--- | :--- |
 | 2026-11-23 | Versión inicial (`borrador`) | Pedido del usuario; Slice 3 sin spec |
 | 2026-11-23 | Paso a `aprobada` (`OK SPEC`) | Aprobación del usuario tras resolver las decisiones de revisión |
+| 2026-11-23 | Decisión: el aviso de Booking es un anuncio de viaje nuevo, visible a todos | Respuesta del usuario |

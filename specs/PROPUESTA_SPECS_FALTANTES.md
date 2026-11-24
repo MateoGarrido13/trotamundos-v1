@@ -41,3 +41,7 @@ Funciona bien y verificado a mano: alta idempotente de reservas, permisos por ro
 2. **B** y luego **C**: dan la interfaz que hoy falta.
 3. **D**: el correo real, cuando exista el proveedor y las credenciales.
 4. **E, F, G**: completan los 5 slices del Plan Maestro.
+
+## 5. Orden de implementación decidido
+
+`COMP-05` (identidad), `COMP-02` (web), `COMP-03` (móvil), y luego `COMP-04` (correo real, cuando existan las credenciales de Google Cloud), `COMP-06`, `COMP-07` y `COMP-08`.

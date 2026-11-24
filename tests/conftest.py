@@ -4,6 +4,11 @@ import os
 os.environ.setdefault("TROTA_DSN_VIAJES_PRIMARIA", "postgresql://trotamundos:trotamundos@localhost:5433/trotamundos_test")
 os.environ.setdefault("TROTA_DSN_VIAJES_PASIVA", "postgresql://trotamundos:trotamundos@localhost:5434/trotamundos_test")
 os.environ.setdefault("TROTA_DSN_ANALITICA", "postgresql://trotamundos:trotamundos@localhost:5435/trotamundos_test")
+# SPEC-COMP-05: las seis bases de cuentas, también en sus bases de test.
+for _i, (_region, _puertos) in enumerate({"AMER": (5436, 5437), "EMEA": (5438, 5439), "APAC": (5440, 5441)}.items()):
+    for _rol, _puerto in zip(("PRIMARIA", "PASIVA"), _puertos):
+        os.environ.setdefault(f"TROTA_DSN_CUENTAS_{_region}_{_rol}",
+                              f"postgresql://trotamundos:trotamundos@localhost:{_puerto}/trotamundos_test")
 
 from datetime import datetime
 
@@ -84,3 +89,34 @@ def bases_limpias():
                     "SELECT gid FROM pg_prepared_xacts WHERE database = current_database()"
             ).fetchall():
                 conn.execute(f"ROLLBACK PREPARED '{gid}'")
+
+
+# --- Bases de cuentas (SPEC-COMP-05) -------------------------------------------------
+from trotamundos.config import ConfiguracionIdentidad  # noqa: E402
+from trotamundos.identidad.region.base import TABLAS as TABLAS_CUENTAS  # noqa: E402
+from trotamundos.identidad.region.base import aplicar_esquema as aplicar_esquema_cuentas  # noqa: E402
+
+
+def limpiar_cuentas(dsn: str) -> None:
+    with conectar(dsn, autocommit=True) as conn:
+        base = conn.execute("SELECT current_database()").fetchone()[0]
+        if not base.endswith("_test"):
+            raise RuntimeError(f"los tests se niegan a borrar la base {base!r}")
+        for (gid,) in conn.execute(
+                "SELECT gid FROM pg_prepared_xacts WHERE database = current_database()").fetchall():
+            conn.execute(f"ROLLBACK PREPARED '{gid}'")
+        conn.execute("DROP TABLE IF EXISTS " + ", ".join(TABLAS_CUENTAS) + " CASCADE")
+        aplicar_esquema_cuentas(conn)
+
+
+@pytest.fixture
+def cuentas_limpias():
+    """Las seis bases de cuentas con las tablas recreadas; devuelve la configuración de identidad
+    con claves de firma fijas y un costo de hash bajo para los tests."""
+    cfg = ConfiguracionIdentidad(
+        claves_firma={"amer": "01" * 32, "emea": "02" * 32, "apac": "03" * 32},
+        clave_gateway="secreto-del-gateway", costo_hash=4)
+    for primaria, pasiva in cfg.dsn.values():
+        limpiar_cuentas(primaria)
+        limpiar_cuentas(pasiva)
+    return cfg

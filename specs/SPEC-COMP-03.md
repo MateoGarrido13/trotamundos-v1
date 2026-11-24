@@ -97,6 +97,11 @@ Versión móvil del panel (`CON-01`). Al abrirse muestra el login en menos de 1,
 * Seguimiento continuo de posición (`ADR-IT5-005`, rechazado).
 * Mapa embebido: solo se abre la navegación nativa.
 
+## Decisiones tomadas
+
+1. **`lugar` con coordenadas:** se enmiendan `SPEC-REF-01` y `SPEC-REF-04` y el backend para que `lugar` lleve `destino` y, opcionalmente, `latitud` y `longitud` (como fija `ADR-IT4-009`). Las reservas existentes siguen válidas. Va como primera tarea del plan de esta spec.
+2. **Verificación:** los criterios `AC-COMP-03-*` se prueban con Playwright (Chromium), con red estrangulada y posición simulada.
+
 ## Historial de Cambios
 
 | Fecha | Cambio | Motivo |
@@ -104,3 +109,4 @@ Versión móvil del panel (`CON-01`). Al abrirse muestra el login en menos de 1,
 | 2026-11-23 | Versión inicial (`borrador`) | Pedido del usuario; PWA elegida como cliente móvil |
 | 2026-11-23 | Decisión cerrada: enmienda de `REF-04` y `REF-01` | `lugar` estructurado (nombre, destino, coordenadas opcionales); la migración del código se planifica en `PLAN-COMP-03` |
 | 2026-11-23 | Paso a `aprobada` (`OK SPEC`) | Aprobación del usuario tras resolver las decisiones de revisión |
+| 2026-11-23 | Decisiones: `lugar` con coordenadas y Playwright | Respuesta del usuario |
