@@ -7,6 +7,10 @@
 Autorizar y revocar llegan por el API Gateway, que identifica al titular con `X-Titular-Id`."""
 from __future__ import annotations
 
+import asyncio
+import logging
+from collections.abc import Awaitable, Callable
+
 from fastapi import APIRouter, FastAPI, Header, HTTPException, Response
 from pydantic import BaseModel
 
@@ -15,11 +19,17 @@ from trotamundos.entrada.agencia import AdaptadorAgencia
 from trotamundos.entrada.gestor_autorizacion import GestorAutorizacion
 
 
+log = logging.getLogger(__name__)
+
+# Aviso a la API de correo de que el acceso se revocó: (titular, token que había). Lo llena la composición.
+AlRevocar = Callable[[str, str], Awaitable[None]]
+
+
 class Consentimiento(BaseModel):
     token: str
 
 
-def crear_router(gestor: GestorAutorizacion) -> APIRouter:
+def crear_router(gestor: GestorAutorizacion, al_revocar: AlRevocar | None = None) -> APIRouter:
     """Autorizar y revocar el correo, para montarlos en la app principal (SPEC-COMP-01)."""
     router = APIRouter()
 
@@ -35,8 +45,15 @@ def crear_router(gestor: GestorAutorizacion) -> APIRouter:
         return {"titular_id": titular, "vence": vence.isoformat()}
 
     @router.delete("/correo/autorizacion", status_code=204)
-    def revocar(x_titular_id: str | None = Header(default=None)) -> Response:
-        gestor.revocar(_titular(x_titular_id))
+    async def revocar(x_titular_id: str | None = Header(default=None)) -> Response:
+        titular = _titular(x_titular_id)
+        token = await asyncio.to_thread(gestor.token_vigente, titular) if al_revocar else None
+        await asyncio.to_thread(gestor.revocar, titular)  # primero el borrado local (SPEC-COMP-04, regla de revocar)
+        if al_revocar and token:
+            try:
+                await al_revocar(titular, token)
+            except Exception:  # noqa: BLE001 - el token local ya no existe: el aviso a la API es de mejor esfuerzo
+                log.warning("no se pudo avisar la revocación de %s a la API de correo", titular)
         return Response(status_code=204)
 
     return router

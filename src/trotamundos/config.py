@@ -161,6 +161,29 @@ class ConfiguracionCotizacion:
 
 
 @dataclass(frozen=True)
+class ConfiguracionGmail:
+    """SPEC-COMP-04, «Parámetros Configurables». Las credenciales salen del entorno y nunca se escriben
+    en un log ni en la base (regla 7). Las URL de Google son configurables para apuntar al simulado."""
+
+    client_id: str = _env("TROTA_GMAIL_CLIENT_ID", "")
+    client_secret: str = field(default=_env("TROTA_GMAIL_CLIENT_SECRET", ""), repr=False)
+    redireccion_oauth: str = _env("TROTA_GMAIL_REDIRECCION", "http://localhost:8000/correo/oauth/callback")
+    max_mensajes_por_sondeo: int = int(_env("TROTA_GMAIL_MAX_MENSAJES", "100"))
+    cota_llamada_gmail_segundos: float = float(_env("TROTA_GMAIL_COTA", "10"))
+    # PLAN-COMP-04, D4: cuánto vale el `state` de un solo uso.
+    vigencia_state_segundos: float = float(_env("TROTA_GMAIL_VIGENCIA_STATE", "600"))
+    url_autorizacion: str = _env("TROTA_GMAIL_URL_AUTORIZACION", "https://accounts.google.com/o/oauth2/v2/auth")
+    url_token: str = _env("TROTA_GMAIL_URL_TOKEN", "https://oauth2.googleapis.com/token")
+    url_revocacion: str = _env("TROTA_GMAIL_URL_REVOCACION", "https://oauth2.googleapis.com/revoke")
+    url_api: str = _env("TROTA_GMAIL_URL_API", "https://gmail.googleapis.com/gmail/v1")
+
+    @property
+    def habilitado(self) -> bool:
+        """Sin las dos credenciales la app usa el correo simulado (regla 8)."""
+        return bool(self.client_id and self.client_secret)
+
+
+@dataclass(frozen=True)
 class Configuracion:
     correo: ConfiguracionCorreo = field(default_factory=ConfiguracionCorreo)
     broker: ConfiguracionBroker = field(default_factory=ConfiguracionBroker)
@@ -172,6 +195,7 @@ class Configuracion:
     analitica: ConfiguracionAnalitica = field(default_factory=ConfiguracionAnalitica)
     asistente: ConfiguracionAsistente = field(default_factory=ConfiguracionAsistente)
     cotizacion: ConfiguracionCotizacion = field(default_factory=ConfiguracionCotizacion)
+    gmail: ConfiguracionGmail = field(default_factory=ConfiguracionGmail)
 
     def __post_init__(self) -> None:
         # Ninguna retención puede ser menor que la ventana de sondeo (SPEC-REF-02/03): si lo

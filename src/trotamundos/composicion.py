@@ -13,11 +13,14 @@ from dataclasses import dataclass
 
 from collections.abc import Mapping
 
+from fastapi import APIRouter
+
 from trotamundos.asistente.asistente import ModuloAsistente
 from trotamundos.asistente.motor import IMotorConversacional, MotorSimulado
 from trotamundos.broker import Broker
 from trotamundos.config import (
-    ConfiguracionAgencias, ConfiguracionAsistente, ConfiguracionCotizacion, ConfiguracionIngesta)
+    ConfiguracionAgencias, ConfiguracionAsistente, ConfiguracionCotizacion, ConfiguracionGmail,
+    ConfiguracionIngesta)
 from trotamundos.cotizacion.adaptadores import AdaptadorAerolineas, AdaptadorArrendadoras, AdaptadorHoteles
 from trotamundos.cotizacion.apis_simuladas import ApiAerolineasSoap, ApiArrendadoras, ApiHoteles
 from trotamundos.cotizacion.balanceador import Balanceador
@@ -29,6 +32,9 @@ from trotamundos.dominio.puertos_cotizacion import ICotizador
 from trotamundos.dominio.puertos_casos import EntregaNovedadCaso
 from trotamundos.entrada.agencia import AdaptadorAgencia, MockAgencia
 from trotamundos.entrada.filtro_remitentes import FiltroWhitelist
+from trotamundos.entrada.gestor_autorizacion import GestorAutorizacion
+from trotamundos.entrada.gmail import ApiGmail, ClienteHttp, ServicioOAuth, crear_cliente_http
+from trotamundos.entrada.gmail import crear_router as crear_router_oauth
 from trotamundos.entrada.ingesta import ServicioIngesta
 from trotamundos.orquestador.fachada_asistente import FachadaAsistente
 from trotamundos.orquestador.incorporacion import IncorporadorReservas
@@ -107,3 +113,31 @@ def ensamblar_cotizacion(
     nodos = tuple(NodoCotizacion(f"cotizacion-{i + 1}", servicio) for i in range(configuracion.nodos_cotizacion))
     balanceador = Balanceador(nodos, configuracion.intervalo_eco)
     return SistemaCotizacion(CacheBorde(balanceador, configuracion), balanceador, nodos, apis)
+
+
+@dataclass(frozen=True)
+class SistemaGmail:
+    """El correo real (SPEC-COMP-04): la API de lectura, el flujo OAuth y sus rutas."""
+
+    api: ApiGmail
+    oauth: ServicioOAuth
+    router: APIRouter
+    cliente: ClienteHttp
+
+    async def al_revocar(self, titular_id: str, token: str) -> None:
+        await self.oauth.revocar_en_google(titular_id, token)
+
+    async def cerrar(self) -> None:
+        await self.cliente.aclose()
+
+
+def ensamblar_gmail(
+    configuracion: ConfiguracionGmail,
+    gestor: GestorAutorizacion,
+    cliente: ClienteHttp | None = None,
+) -> SistemaGmail:
+    """Es el único lugar que conecta `entrada.gmail` con el resto. Un `cliente` inyectado (con
+    transporte simulado) permite probarlo sin red."""
+    cliente = cliente or crear_cliente_http()
+    oauth = ServicioOAuth(gestor, cliente, configuracion)
+    return SistemaGmail(ApiGmail(cliente, configuracion), oauth, crear_router_oauth(oauth), cliente)

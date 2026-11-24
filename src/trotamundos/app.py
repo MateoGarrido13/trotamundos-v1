@@ -20,7 +20,8 @@ from trotamundos.analitica.base import conectar as conectar_analitica
 from trotamundos.analitica.consultas import ServicioConsultas
 from trotamundos.analitica.proyector import Proyector
 from trotamundos.asistente import app as app_asistente
-from trotamundos.composicion import ensamblar_agencias, ensamblar_asistente, ensamblar_correo, ensamblar_cotizacion
+from trotamundos.composicion import (
+    ensamblar_agencias, ensamblar_asistente, ensamblar_correo, ensamblar_cotizacion, ensamblar_gmail)
 from trotamundos.cotizacion import api as api_cotizacion
 from trotamundos.consumidores import Supervisor
 from trotamundos.entrada import app as app_entrada
@@ -98,9 +99,13 @@ def create_app(configuracion: Configuracion | None = None,
         entrega_casos=casos)
 
     # SPEC-COMP-01: correo (mock hasta que exista el adaptador real), consumidores y analítica.
-    api_correo = MockApiCorreo()
     gestor_correo = GestorAutorizacion(
         RepositorioTokensPostgres(base_viajes), CifradorTokens(cfg.correo.clave_tokens), cfg.correo)
+    # SPEC-COMP-04: con credenciales de Google el correo es real; sin ellas, el simulado.
+    gmail = ensamblar_gmail(cfg.gmail, gestor_correo) if cfg.gmail.habilitado else None
+    if gmail is None:
+        log.warning("TROTA_GMAIL_CLIENT_ID/TROTA_GMAIL_CLIENT_SECRET sin definir: se usa el correo simulado")
+    api_correo = gmail.api if gmail else MockApiCorreo()
     sondeo = ProgramadorSondeo(AdaptadorCorreo(api_correo, gestor_correo, broker, cfg.correo), gestor_correo, cfg.correo)
     parseo = ClienteParseo()
     consumidor_correo = ConsumidorCorreo(broker, parseo, nodos_correo.filtro)
@@ -132,6 +137,8 @@ def create_app(configuracion: Configuracion | None = None,
             await asyncio.gather(*tareas, return_exceptions=True)
             await parseo.cerrar()
             await cotizacion.borde.cerrar()
+            if gmail:
+                await gmail.cerrar()
 
     app = FastAPI(title="Trotamundos (prototipo)", lifespan=ciclo_de_vida)
     app.state.configuracion = cfg
@@ -150,6 +157,7 @@ def create_app(configuracion: Configuracion | None = None,
     app.state.supervisor = supervisor
     app.state.api_correo = api_correo
     app.state.gestor_correo = gestor_correo
+    app.state.gmail = gmail
     app.state.proyector = proyector
     app.state.cotizacion = cotizacion
     app.include_router(api_viajes.router)
@@ -158,7 +166,9 @@ def create_app(configuracion: Configuracion | None = None,
     app.include_router(api_casos.router)
     app.include_router(api_miembros.router)
     app.include_router(api_agencia.crear_router(adaptador_agencia))
-    app.include_router(app_entrada.crear_router(gestor_correo))
+    app.include_router(app_entrada.crear_router(gestor_correo, al_revocar=gmail.al_revocar if gmail else None))
+    if gmail:
+        app.include_router(gmail.router)
     app.include_router(api_cotizacion.crear_router(cotizacion.borde))
     app.include_router(app_analitica.crear_router(ServicioConsultas(cfg.analitica)))
     app.include_router(app_asistente.crear_router(ensamblar_asistente(app, configuracion=cfg.asistente)))

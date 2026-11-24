@@ -75,6 +75,13 @@ PROHIBIDOS = [
     ("cotizacion", "trotamundos.orquestador", "AC-COMP-06-12: la cotización es independiente de esto"),
     ("cotizacion", "trotamundos.composicion", "AC-COMP-06-12: la cotización es independiente de esto"),
     ("cotizacion", "psycopg", "AC-COMP-06-12: la cotización no escribe en una base"),
+    # PLAN-COMP-04
+    ("entrada/gmail", "trotamundos.persistencia", "el cliente de Gmail no toca ninguna base"),
+    ("entrada/gmail", "trotamundos.broker", "el contacto con el broker es el Adaptador de correo"),
+    ("entrada/gmail", "trotamundos.orquestador", "ADR-IT3-010: el contacto es el Broker"),
+    ("entrada/gmail/mensajes", "httpx", "la traducción de mensajes no hace red"),
+    ("entrada/gmail/api", "trotamundos.entrada.gestor_autorizacion", "la API de lectura no conoce al Gestor"),
+    ("entrada/gmail/oauth", "trotamundos.entrada.gmail.api", "el consentimiento no lee el buzón"),
 ]
 
 
@@ -126,3 +133,24 @@ def test_el_modulo_de_control_de_acceso_no_se_consulta_desde_fuera_del_orquestad
             continue
         malos = [m for m in _imports(archivo) if m.startswith("trotamundos.orquestador.control_acceso")]
         assert not malos, f"{relativo} importa {malos}: el control de acceso es interno al Orquestador"
+
+
+def test_solo_la_composicion_importa_el_cliente_de_gmail():
+    """SPEC-COMP-04: nada fuera de la clase nueva importa el cliente de Google."""
+    permitidos = {"composicion.py"}
+    for archivo in RAIZ.rglob("*.py"):
+        relativo = archivo.relative_to(RAIZ)
+        if relativo.parts[:2] == ("entrada", "gmail") or relativo.name in permitidos and len(relativo.parts) == 1:
+            continue
+        malos = [m for m in _imports(archivo) if m == "trotamundos.entrada.gmail" or m.startswith("trotamundos.entrada.gmail.")]
+        assert not malos, f"{relativo} importa {malos}: solo la composición conecta el cliente de Gmail"
+
+
+def test_solo_el_cliente_de_gmail_usa_httpx():
+    """PLAN-COMP-04, D1: `httpx` es del cliente de Google; el resto del código no hace red."""
+    for archivo in RAIZ.rglob("*.py"):
+        relativo = archivo.relative_to(RAIZ)
+        if relativo.parts[:2] == ("entrada", "gmail"):
+            continue
+        malos = [m for m in _imports(archivo) if m == "httpx" or m.startswith("httpx.")]
+        assert not malos, f"{relativo} importa {malos}"
