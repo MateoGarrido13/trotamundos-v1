@@ -71,7 +71,9 @@ La unidad de una spec es un requerimiento funcional, `REF-01` a `REF-07`. No hay
 | `REF-06` | Analítica de datos | `SPEC-REF-06` |
 | `REF-07` | Asistente virtual (Chatbot) | `SPEC-REF-07` |
 
-Registro y autenticación, cotización, caché de borde, novedades de Booking (`QA-PER-01`), notificaciones (`QA-INT-02`) y el cliente con GPS (`QA-USA-01`) no tienen spec en esta tanda.
+Registro y autenticación, cotización, caché de borde, novedades de Booking (`QA-PER-01`), notificaciones (`QA-INT-02`) y el cliente con GPS (`QA-USA-01`) no tenían spec en la primera tanda.
+
+**Specs de composición (`COMP`).** Lo que no es un requerimiento `REF` (los clientes, el sistema ejecutable y los incrementos que solo cuelgan de drivers de calidad) usa el código `COMP-<NN>`: `SPEC-COMP-<NN>`, `AC-COMP-<NN>-<MM>`, `PLAN-COMP-<NN>`, `T-COMP-<NN>-<MM>`. No introduce drivers nuevos: cita los `REF`, `QA` y `CON` de los listados. `COMP-01` sistema ejecutable, `COMP-02` cliente web, `COMP-03` cliente móvil, `COMP-04` correo real, `COMP-05` identidad regional, `COMP-06` cotización, `COMP-07` novedades de Booking, `COMP-08` notificaciones.
 
 ### 3.2. Identificadores Estables
 

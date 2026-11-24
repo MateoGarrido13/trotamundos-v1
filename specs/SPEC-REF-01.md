@@ -28,7 +28,7 @@ El Orquestador de viajes agrupa las reservas por viaje y, cuando el viaje se com
 ## Conceptos de diseño aceptados
 
 * **N-Tier** (`ADR-001`): el Orquestador, en la capa de lógica de negocio, agrupa las reservas por viaje y archiva o saca de la vista principal el viaje completado. La presentación queda en los clientes y los datos en la base.
-* **Polymorphism con Registro de tipos por configuration-time binding** (`ADR-IT3-005`): la agrupación trabaja contra `Reserva` (identificador, viaje, fechas, estado y resumen) y no conoce los tipos concretos. Un medio nuevo es una clase más que extiende `Reserva` y se registra, sin cambios en la agrupación.
+* **Polymorphism con Registro de tipos por configuration-time binding** (`ADR-IT3-005`): la agrupación trabaja contra `Reserva` (identificador, viaje, fechas, estado, resumen y `lugar` con nombre, destino y coordenadas opcionales, `ADR-IT4-009`) y no conoce los tipos concretos. Un medio nuevo es una clase más que extiende `Reserva` y se registra, sin cambios en la agrupación.
 * **Transactions, commit en dos fases** (`ADR-IT2-004`): el Orquestador escribe en la Base primaria; la primaria no confirma éxito hasta que la Base pasiva acuerda.
 * **Reconfiguration** (`ADR-IT2-005`): cuando la Base primaria deja de atender, el acceso del Orquestador conmuta a la Base pasiva, que pasa a ser la copia que atiende. El traspaso no es inmediato.
 
@@ -103,3 +103,4 @@ El Orquestador de viajes agrupa las reservas por viaje y, cuando el viaje se com
 | 2026-11-23 | Decisiones de revisión y paso a `aprobada` (`OK SPEC`) | Cierre por fecha y archivado sin eliminar; consulta del archivo; lista vacía sin viajes; rechazo del arranque con tipo inválido; detección por error de conexión con umbral configurable y primaria vieja bloqueada |
 | 2026-11-23 | Decisiones de implementación fijadas (`PLAN-REF-01`) | Umbral de conmutación 3; intervalo de archivado 3600 s; viaje completo con al menos una reserva, incluidas las canceladas; fallo por debajo del umbral y fallo de la pasiva; orden de confirmación; 422 sin identidad; tipos concretos sin campos propios |
 | 2026-11-23 | Ajuste por `SPEC-REF-04` | Las reservas dadas de baja lógica no cuentan para la vista ni para el cierre del viaje; el Registro de tipos suma `actividad` |
+| 2026-11-23 | Enmienda por `ADR-IT4-009` (pedida por `SPEC-COMP-03`) | El contrato `Reserva` incluye `lugar` (nombre, destino y coordenadas opcionales); la agrupación sigue sin conocer los tipos |

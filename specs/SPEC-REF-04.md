@@ -26,7 +26,7 @@ Esas tres operaciones viven en el Orquestador de viajes, sobre el modelo polimó
 ## Conceptos de diseño aceptados
 
 * **Gestión manual en el Orquestador** (`ADR-IT4-008`): un único camino de escritura y de validación sobre el modelo polimórfico. Cada operación lleva una clave de operación generada por el cliente. Eliminar es una baja lógica. Una reserva editada a mano no la sobrescribe una novedad del proveedor: la novedad queda visible en «Novedades» para que el viajero decida. `ReservaActividad` es una clase más del Registro de tipos.
-* **`lugar` en el contrato `Reserva`** (`ADR-IT4-009`): `lugar` forma parte del contrato `Reserva`. El viajero puede indicarlo en la carga manual. Analítica y demás consumidores lo leen del mismo contrato.
+* **`lugar` en el contrato `Reserva`** (`ADR-IT4-009`): `lugar` forma parte del contrato `Reserva` y lleva **nombre, destino y, cuando se conocen, latitud y longitud**. El viajero puede indicarlo en la carga manual. Analítica, el cliente móvil y demás consumidores lo leen del mismo contrato.
 * **Autorización por itinerario y auditoría** (`ADR-IT4-007`): el Módulo de control de acceso está dentro del Orquestador. Cada operación declara el permiso que exige. Sin membresía y permiso explícitos, no hay operación. La auditoría de la decisión, permitida o denegada, se escribe en la misma transacción. El Orquestador responde acceso denegado y el cliente presenta la página «Error 401».
 
 ## Relaciones Permitidas
@@ -72,7 +72,7 @@ El ADR deja la matriz de roles y permisos para el diseño detallado. Esta spec l
 4. **Precedencia:** si una novedad del proveedor llega sobre una reserva editada a mano, no la pisa. La novedad queda en «Novedades». *(Origen: `ADR-IT4-008`)*
 5. **Auditoría atómica:** con permiso, la reserva y el asiento de auditoría se escriben en la misma transacción. Si la escritura falla, no queda ni la reserva ni el asiento de éxito. Sin permiso, no se escribe la reserva y sí queda el asiento de la denegación. Una operación rechazada por la validación también deja su asiento. *(Origen: `ADR-IT4-007`)*
 6. **Alcance del participante:** el participante modifica o elimina solo las reservas que él creó. Sobre las demás, el acceso se deniega y queda el asiento. El organizador modifica cualquiera. *(Origen: `ADR-IT4-007`)*
-7. **Lugar:** la reserva manual puede traer `lugar`. Si no trae coordenadas, el contrato igual las tolera. *(Origen: `ADR-IT4-009`)*
+7. **Lugar:** la reserva manual puede traer `lugar`, con nombre y destino y, opcionalmente, latitud y longitud. Las coordenadas van las dos o ninguna. Si no las trae, el contrato igual lo tolera. *(Origen: `ADR-IT4-009`)*
 8. **Vista para los demás miembros:** la reserva queda persistida en el itinerario, así que la próxima vista de cualquier miembro con permiso de ver la incluye. *(Origen: `QA-SEG-02`)*
 9. **Itinerario:** es el contenedor de los viajes y el nivel al que se otorgan los permisos. El itinerario individual de un viajero se identifica con su propia cuenta. *(Origen: `ADR-IT4-007`)*
 10. **Dónde va una reserva manual:** el pedido trae el itinerario y el viaje. Si el viaje no existe se crea dentro de ese itinerario; si pertenece a otro itinerario, se rechaza por campos inválidos. *(Origen: `ADR-IT4-008`)*
@@ -142,3 +142,4 @@ El ADR deja la matriz de roles y permisos para el diseño detallado. Esta spec l
 | 2026-11-22 | Versión inicial (`borrador`) | Creación a partir de `REF-04` y de los ADR aceptados que la iteración le asocia |
 | 2026-11-23 | Decisiones de revisión | Matriz de roles y permisos con alcance propio del participante (`creadoPor`); membresías precargadas; vista actualizada en la próxima consulta; código 403 con página «Error 401»; valores de parámetros; orden de validación y errores de las operaciones; criterios de aceptación nuevos |
 | 2026-11-23 | Decisiones de implementación fijadas (`PLAN-REF-04`) | Itinerario como contenedor de viajes con el individual identificado por la cuenta; destino de una reserva manual; una sola transacción con permiso, clave, reserva y auditoría; auditoría de los rechazos; reservas en baja fuera de la vista y del cierre del viaje; qué se actualiza; claves por cuenta y rechazos sin memorizar; novedades mínimas con precedencia; códigos 403, 404, 409 y 422 |
+| 2026-11-23 | Enmienda por `ADR-IT4-009` (pedida por `SPEC-COMP-03`) | `lugar` pasa de texto a estructura con nombre, destino y coordenadas opcionales (latitud y longitud, las dos o ninguna) |
