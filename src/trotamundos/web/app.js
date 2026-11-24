@@ -53,6 +53,20 @@ const sesion = {
   },
 };
 
+
+// Ids internos (viaje-3f9a…, res-…) se muestran acortados; el id completo queda en title/aria-label.
+const ROTULOS_ID = {viaje: "Viaje", itin: "Itinerario", res: "Reserva", caso: "Caso"};
+function legible(id) {
+  const m = /^(viaje|itin|res|caso)-([0-9a-f]{6,})$/i.exec(String(id));
+  return m ? ROTULOS_ID[m[1].toLowerCase()] + " #" + m[2].slice(0, 6) : String(id);
+}
+function cambiosLegibles(cambios) {
+  if (!cambios || typeof cambios !== "object") return String(cambios == null ? "" : cambios);
+  return Object.entries(cambios)
+    .map(([campo, valor]) => campo.replace(/_/g, " ") + ": " + (typeof valor === "object" ? JSON.stringify(valor) : valor))
+    .join(" · ");
+}
+
 function texto(padre, etiqueta, valor) {
   const nodo = document.createElement(etiqueta);
   nodo.textContent = valor == null ? "" : String(valor);
@@ -235,7 +249,7 @@ async function cargarViajes() {
     const bloque = texto(arbol, "div", "");
     bloque.className = "itinerario";
     bloque.dataset.itinerario = item.itin.id;
-    texto(bloque, "h2", item.itin.id + " (" + item.itin.rol + ")");
+    texto(bloque, "h2", legible(item.itin.id) + " · " + item.itin.rol).title = item.itin.id;
     pintarViajes(bloque, item.viajes, item.itin.id);
     const gestionar = texto(bloque, "button", "Gestionar");
     gestionar.type = "button";
@@ -247,17 +261,21 @@ function pintarViajes(bloque, viajes, itinerarioId) {
   for (const viaje of viajes) {
     const caja = texto(bloque, "div", "");
     caja.className = "viaje";
-    texto(caja, "h3", viaje.id);
+    texto(caja, "h3", legible(viaje.id)).title = viaje.id;
     const lista = texto(caja, "ul", "");
     for (const reserva of viaje.reservas) {
       texto(lista, "li", reserva.resumen || reserva.lugar || reserva.identificador);
     }
     if (itinerarioId && viaje.reservas) {
       for (const reserva of viaje.reservas) {
-        const baja = texto(caja, "button", "Dar de baja " + reserva.identificador);
+        const baja = texto(caja, "button", "Dar de baja " + legible(reserva.identificador));
+        baja.setAttribute("aria-label", "Dar de baja " + reserva.identificador);
+        baja.title = reserva.identificador;
         baja.type = "button";
         baja.addEventListener("click", () => eliminarReserva(itinerarioId, reserva.identificador));
-        const problema = texto(caja, "button", "Reportar problema " + reserva.identificador);
+        const problema = texto(caja, "button", "Reportar problema " + legible(reserva.identificador));
+        problema.setAttribute("aria-label", "Reportar problema " + reserva.identificador);
+        problema.title = reserva.identificador;
         problema.type = "button";
         problema.addEventListener("click", () => prepararProblema(itinerarioId, reserva.identificador));
       }
@@ -268,7 +286,7 @@ function pintarViajes(bloque, viajes, itinerarioId) {
 function abrirViaje(itinerarioId, viajes) {
   estado.itinerario = itinerarioId;
   estado.viaje = viajes && viajes.length ? viajes[0].id : null;
-  document.getElementById("viaje-titulo").textContent = itinerarioId;
+  document.getElementById("viaje-titulo").textContent = legible(itinerarioId);
   const caja = document.getElementById("reservas-viaje");
   limpiar(caja);
   pintarViajes(caja, viajes || [], itinerarioId);
@@ -332,7 +350,7 @@ async function pintarReservasAbiertas() {
   const caja = document.getElementById("reservas-viaje");
   limpiar(caja);
   pintarViajes(caja, viajes, estado.itinerario);
-  document.getElementById("viaje-titulo").textContent = estado.itinerario;
+  document.getElementById("viaje-titulo").textContent = legible(estado.itinerario);
 }
 
 async function eliminarReserva(itinerarioId, reservaId) {
@@ -365,7 +383,7 @@ async function cargarSelectorItinerarios() {
     const previo = select.value || estado.itinerario;
     limpiar(select);
     for (const itin of lista) {
-      const opcion = texto(select, "option", itin.id);
+      const opcion = texto(select, "option", legible(itin.id));
       opcion.value = itin.id;
     }
     if (previo) select.value = previo;
@@ -383,7 +401,7 @@ async function cargarMiembros() {
   if (!miembros) return;
   const caja = document.getElementById("lista-miembros");
   limpiar(caja);
-  texto(caja, "p", "Itinerario " + itinerario);
+  texto(caja, "p", legible(itinerario));
   for (const miembro of miembros) {
     const fila = texto(caja, "div", "");
     fila.className = "fila";
@@ -437,14 +455,14 @@ async function cargarNovedades() {
   const cajaN = document.getElementById("lista-novedades");
   limpiar(cajaN);
   for (const novedad of listaN) {
-    texto(cajaN, "p", novedad.proveedor + " " + JSON.stringify(novedad.cambios));
+    texto(cajaN, "p", novedad.proveedor + " — " + cambiosLegibles(novedad.cambios));
   }
   const cajaC = document.getElementById("lista-casos");
   limpiar(cajaC);
   for (const caso of listaC) {
     const fila = texto(cajaC, "div", "");
     fila.className = "fila";
-    texto(fila, "p", caso.id + " " + (ESTADOS_CASO[caso.estado] || caso.estado));
+    texto(fila, "p", legible(caso.id) + " · " + (ESTADOS_CASO[caso.estado] || caso.estado)).title = caso.id;
     if (caso.estado === "sin_entregar") {
       const boton = texto(fila, "button", "Reintentar caso");
       boton.type = "button";
@@ -480,7 +498,7 @@ async function cargarAgencia() {
 async function prepararProblema(itinerarioId, reservaId) {
   estado.itinerario = itinerarioId;
   estado.reservaProblema = reservaId;
-  document.getElementById("problema-reserva").textContent = reservaId;
+  document.getElementById("problema-reserva").textContent = legible(reservaId);
   mostrarSeccion("agencia");
   await cargarAgencia();
 }
@@ -541,7 +559,9 @@ async function cargarRevision() {
     const aprobar = texto(fila, "button", "Aprobar " + mensaje.remitente);
     aprobar.type = "button";
     aprobar.addEventListener("click", () => aprobarRemitente(mensaje.remitente));
-    const descartar = texto(fila, "button", "Descartar " + mensaje.id_mensaje);
+    const descartar = texto(fila, "button", "Descartar");
+    descartar.setAttribute("aria-label", "Descartar " + mensaje.id_mensaje);
+    descartar.title = mensaje.id_mensaje;
     descartar.type = "button";
     descartar.addEventListener("click", () => descartarMensaje(mensaje.id_mensaje));
   }

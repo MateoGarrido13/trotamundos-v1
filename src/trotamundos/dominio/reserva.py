@@ -61,6 +61,12 @@ class Lugar(BaseModel):
                 other.nombre, other.destino, other.latitud, other.longitud)
         return NotImplemented
 
+    def __hash__(self) -> int:
+        # Si `Lugar("Roma") == "Roma"`, los dos tienen que tener el mismo hash (contrato de `__eq__`).
+        if self.solo_nombre:
+            return hash(self.nombre)
+        return hash((self.nombre, self.destino, self.latitud, self.longitud))
+
     def __lt__(self, other: object) -> bool:
         if isinstance(other, Lugar):
             return self.nombre < other.nombre

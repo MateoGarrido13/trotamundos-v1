@@ -52,8 +52,36 @@ Las decisiones se tomaron así:
 - **`POLITICAS_SPECS_Y_PLANES.md`, `specs/` y `planes/`**: políticas de Spec-Driven Development, plantillas (`SPEC_TEMPLATE.md`, `PLAN_TEMPLATE.md`) y [Plan Maestro del prototipo](planes/PLAN_MAESTRO.md).
 - **`src/trotamundos/web/`**: cliente web (HTML, CSS y JavaScript, sin compilación), servido por la app en `/web`. Contrato en [SPEC-COMP-02](specs/SPEC-COMP-02.md) y plan en [PLAN-COMP-02](planes/PLAN-COMP-02.md).
 - **`src/trotamundos/movil/`**: cliente móvil (PWA) servido en `/movil`, con GPS en el dispositivo. Contrato en [SPEC-COMP-03](specs/SPEC-COMP-03.md) y plan en [PLAN-COMP-03](planes/PLAN-COMP-03.md).
+- **`scripts/`**: `ejecutar_todo.sh` (levanta bases, datos de demo y app; ver [Ejecutar y probar](#ejecutar-y-probar-el-prototipo)), `crear_bases.py`, `sembrar_datos.py` (cuentas, viajes y reservas por la API) y `sembrar_demo.py` (siembra mínima directo en la base, sin la app).
 - **Plantillas ADD** (`ADR_TEMPLATE.md`, `ESCENARIO_QA_TEMPLATE.md`, `ITERACION_ADD_TEMPLATE.md`): los formatos que usan los documentos de arquitectura.
 - **`TPE - Diseño de Sistemas de Software.pdf`**: el enunciado.
+
+## Ejecutar y probar el prototipo
+
+Requisitos: Docker (con `docker compose`) y Python 3.11+. Un solo script levanta todo:
+
+```bash
+scripts/ejecutar_todo.sh
+```
+
+Hace, en orden: crea `.venv` e instala dependencias si no existen, levanta las 9 bases PostgreSQL con `docker compose up -d --wait`, crea `trotamundos_dev` y `trotamundos_test` en cada una (`scripts/crear_bases.py`), arranca la app con uvicorn y, con la app arriba, siembra datos de prueba por la API (`scripts/sembrar_datos.py`).
+
+Datos de prueba que quedan cargados (idempotente: correrlo de nuevo no duplica nada). Todas las cuentas usan región `amer` y contraseña `demo1234`:
+
+| Cuenta | Qué ve |
+| :--- | :--- |
+| `ana@demo.com` | Organizadora. «Verano en Europa» (7 reservas: vuelos, tren, hoteles, auto y actividad), «Fin de semana en Bariloche» (3) y «Escapada a Lisboa» (2, itinerario propio) |
+| `luis@demo.com`, `sofia@demo.com` | Participantes del itinerario familiar (Europa y Bariloche); también crean reservas ahí |
+
+Una vez arriba:
+
+| Qué | URL |
+| :--- | :--- |
+| Cliente web | <http://127.0.0.1:8000/web/> |
+| Cliente móvil (PWA) | <http://127.0.0.1:8000/movil/> |
+| Salud | <http://127.0.0.1:8000/salud> |
+
+Opciones: `--tests` (corre pytest antes de arrancar), `--tests-todo` (suite completa, con carga y navegador), `--solo-tests` (corre pytest y termina), `--sin-demo` (no siembra datos), `--parar` (baja los contenedores conservando datos) y `--limpiar` (los baja y borra los volúmenes). `PUERTO` y `HOST` se cambian por variable de entorno (`PUERTO=9000 scripts/ejecutar_todo.sh`). Sin `TROTA_GMAIL_CLIENT_ID`/`TROTA_GMAIL_CLIENT_SECRET` el correo es simulado, y sin claves definidas se usan claves efímeras (los tokens no sobreviven al reinicio). Para las pruebas de navegador hace falta `playwright install chromium`.
 
 ## Segunda parte
 

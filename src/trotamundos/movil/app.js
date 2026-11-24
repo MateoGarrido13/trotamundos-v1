@@ -25,6 +25,19 @@ const sesion = {
   borrar() { sessionStorage.removeItem("trotamundos.sesion"); },
 };
 
+// Ids internos (viaje-3f9a…, res-…) se muestran acortados; el id completo queda en title/aria-label.
+const ROTULOS_ID = {viaje: "Viaje", itin: "Itinerario", res: "Reserva", caso: "Caso"};
+function legible(id) {
+  const m = /^(viaje|itin|res|caso)-([0-9a-f]{6,})$/i.exec(String(id));
+  return m ? ROTULOS_ID[m[1].toLowerCase()] + " #" + m[2].slice(0, 6) : String(id);
+}
+function cambiosLegibles(cambios) {
+  if (!cambios || typeof cambios !== "object") return String(cambios == null ? "" : cambios);
+  return Object.entries(cambios)
+    .map(([campo, valor]) => campo.replace(/_/g, " ") + ": " + (typeof valor === "object" ? JSON.stringify(valor) : valor))
+    .join(" · ");
+}
+
 function nodo(etiqueta, valor) {
   const el = document.createElement(etiqueta);
   if (valor != null) el.textContent = String(valor);
@@ -163,9 +176,9 @@ async function cargarViajes() {
     const viajes = await jsonOk(detalle);
     if (!viajes) return;
     const bloque = nodo("div");
-    bloque.append(nodo("h2", itin.id));
+    bloque.append(nodo("h2", legible(itin.id)));
     for (const viaje of viajes) {
-      bloque.append(nodo("h3", viaje.id));
+      bloque.append(nodo("h3", legible(viaje.id)));
       const abrir = nodo("button", "Abrir viaje");
       abrir.type = "button";
       abrir.addEventListener("click", () => abrirViaje(itin.id, viaje));
@@ -194,7 +207,7 @@ function abrirViaje(itinerarioId, viaje) {
   estado.itinerario = itinerarioId;
   estado.viaje = viaje.id;
   estado.reservas = (viaje.reservas || []).map((reserva) => ({...reserva, lugar: lugarDe(reserva.lugar)}));
-  document.getElementById("viaje-titulo").textContent = viaje.id;
+  document.getElementById("viaje-titulo").textContent = legible(viaje.id);
   for (const pantalla of PANTALLAS) document.getElementById(pantalla).hidden = pantalla !== "viaje";
   document.getElementById("menu").hidden = false;
   pintarReservas();
@@ -242,7 +255,9 @@ function pintarReservas() {
         fila.append(nodo("p", "más cercana"));
       }
     }
-    const baja = nodo("button", "Dar de baja " + reserva.identificador);
+    const baja = nodo("button", "Dar de baja " + legible(reserva.identificador));
+    baja.setAttribute("aria-label", "Dar de baja " + reserva.identificador);
+    baja.title = reserva.identificador;
     baja.type = "button";
     baja.addEventListener("click", () => eliminarReserva(reserva.identificador));
     fila.append(baja);
@@ -309,12 +324,12 @@ async function cargarNovedades() {
   if (!listaN || !listaC) return;
   const cajaN = document.getElementById("lista-novedades");
   limpiar(cajaN);
-  for (const novedad of listaN) cajaN.append(nodo("p", novedad.proveedor + " " + JSON.stringify(novedad.cambios)));
+  for (const novedad of listaN) cajaN.append(nodo("p", novedad.proveedor + " — " + cambiosLegibles(novedad.cambios)));
   const cajaC = document.getElementById("lista-casos");
   limpiar(cajaC);
   for (const caso of listaC) {
     const fila = nodo("div");
-    fila.append(nodo("p", caso.id + " " + caso.estado));
+    fila.append(nodo("p", legible(caso.id) + " · " + caso.estado.replace(/_/g, " ")));
     if (caso.estado === "sin_entregar") {
       const boton = nodo("button", "Reintentar caso");
       boton.type = "button";

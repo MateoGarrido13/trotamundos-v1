@@ -242,7 +242,7 @@ def test_AC_COMP_03_09_sin_permiso_muestra_error_401(navegador, servidor):
     _entrar(page, servidor, correo_ana)
     _viaje(page)
     _reserva(page, "De Ana", "Centro")
-    ident = page.locator(".reserva", has_text="De Ana").inner_text().split("Dar de baja ")[-1].split()[0]
+    ident = page.locator(".reserva", has_text="De Ana").get_by_role("button", name="Dar de baja").get_attribute("title")
     page.locator("#salir").click()
     luis = _entrar(page, servidor, correo_luis)
     page.locator("#salir").click()
