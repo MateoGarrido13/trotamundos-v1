@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="trotamundos-refresco-novedades" content="60">
+  <title>Trotamundos</title>
+  <link rel="stylesheet" href="/web/estilos.css">
+</head>
+<body>
+  <header>
+    <p class="marca">Trotamundos</p>
+    <p id="cuenta" hidden></p>
+    <nav id="menu" hidden>
+      <button type="button" data-pantalla="viajes">Mis viajes</button>
+      <button type="button" data-pantalla="miembros">Miembros</button>
+      <button type="button" data-pantalla="novedades">Novedades</button>
+      <button type="button" data-pantalla="agencia">Agencia y problemas</button>
+      <button type="button" data-pantalla="revision">Mensajes en revisión</button>
+      <button type="button" data-pantalla="correo">Correo</button>
+      <button type="button" data-pantalla="asistente">Asistente</button>
+      <button type="button" data-pantalla="cotizacion">Cotización</button>
+      <button type="button" id="salir">Salir</button>
+    </nav>
+  </header>
+
+  <p id="aviso" hidden></p>
+  <button type="button" id="reintentar" hidden>Reintentar</button>
+
+  <section id="ingreso">
+    <h1>Ingreso</h1>
+    <form id="form-ingreso">
+      <label>Correo <input id="correo-cuenta" name="correo" type="email" autocomplete="username" required></label>
+      <label>Contraseña <input id="contrasena" name="contrasena" type="password" autocomplete="current-password" required></label>
+      <label>Región
+        <select id="region" name="region">
+          <option value="amer">amer</option>
+          <option value="emea">emea</option>
+          <option value="apac">apac</option>
+        </select>
+      </label>
+      <button type="submit" id="entrar">Entrar</button>
+      <button type="button" id="crear-cuenta">Crear cuenta</button>
+    </form>
+    <p id="ingreso-nota"></p>
+  </section>
+
+  <section id="viajes" hidden>
+    <h1>Mis viajes</h1>
+    <form id="form-viaje">
+      <label>Nombre del viaje <input id="viaje-nombre" name="nombre" maxlength="100" required></label>
+      <button type="submit">Crear viaje</button>
+    </form>
+    <button type="button" id="actualizar-viajes">Actualizar</button>
+    <div id="arbol-viajes"></div>
+  </section>
+
+  <section id="viaje" hidden>
+    <h1>Viaje</h1>
+    <p id="viaje-titulo"></p>
+    <form id="form-reserva">
+      <label>Tipo
+        <select id="reserva-tipo" name="tipo">
+          <option>hotel</option>
+          <option>auto</option>
+          <option>vuelo</option>
+          <option>tren</option>
+          <option>autobus</option>
+          <option>actividad</option>
+        </select>
+      </label>
+      <label>Inicio <input id="reserva-inicio" name="inicio" type="datetime-local" required></label>
+      <label>Fin <input id="reserva-fin" name="fin" type="datetime-local" required></label>
+      <label>Lugar <input id="reserva-lugar" name="lugar" required></label>
+      <button type="submit">Dar de alta</button>
+    </form>
+    <button type="button" id="ver-archivados">Ver archivados</button>
+    <div id="archivados"></div>
+    <div id="reservas-viaje"></div>
+  </section>
+
+  <section id="miembros" hidden>
+    <h1>Miembros</h1>
+    <form id="form-miembro">
+      <label>Cuenta <input id="miembro-cuenta" name="cuenta" required></label>
+      <label>Rol
+        <select id="miembro-rol" name="rol">
+          <option value="participante">participante</option>
+          <option value="organizador">organizador</option>
+        </select>
+      </label>
+      <button type="submit">Agregar miembro</button>
+    </form>
+    <div id="lista-miembros"></div>
+  </section>
+
+  <section id="novedades" hidden>
+    <h1>Novedades</h1>
+    <label>Itinerario
+      <select id="novedades-itinerario"></select>
+    </label>
+    <h2>Cambios de proveedores</h2>
+    <div id="lista-novedades"></div>
+    <h2>Casos</h2>
+    <div id="lista-casos"></div>
+    <h2>Anuncios</h2>
+    <div id="lista-anuncios"></div>
+  </section>
+
+  <section id="agencia" hidden>
+    <h1>Agencia y problemas</h1>
+    <p id="problema-datos">A la agencia viajan el identificador de la reserva, la descripción y, si lo escribís, el resumen del diálogo.</p>
+    <p>Reserva: <span id="problema-reserva"></span></p>
+    <p id="falta-agencia" hidden>Elegí una agencia y aceptá el consentimiento antes de reportar.</p>
+    <form id="form-agencia">
+      <label>Agencia <input id="agencia-nombre" name="agencia" required></label>
+      <label><input id="consentimiento" name="consentimiento" type="checkbox"> Doy mi consentimiento para enviar esos datos a la agencia</label>
+      <button type="submit">Guardar agencia</button>
+    </form>
+    <form id="form-problema">
+      <label>Descripción <textarea id="problema-descripcion" name="descripcion" required></textarea></label>
+      <button type="submit">Reportar problema</button>
+    </form>
+    <p id="agencia-actual"></p>
+  </section>
+
+  <section id="revision" hidden>
+    <h1>Mensajes en revisión</h1>
+    <div id="lista-revision"></div>
+    <form id="form-remitente">
+      <label>Remitente seguro <input id="remitente-seguro" name="remitente" type="email" required></label>
+      <button type="submit">Aprobar remitente</button>
+      <button type="button" id="quitar-remitente">Quitar remitente</button>
+    </form>
+  </section>
+
+  <section id="correo" hidden>
+    <h1>Correo</h1>
+    <form id="form-correo">
+      <label>Token de autorización <input id="correo-token" name="token" required></label>
+      <button type="submit">Autorizar</button>
+      <button type="button" id="revocar-correo">Revocar</button>
+    </form>
+    <p id="correo-estado"></p>
+  </section>
+
+  <section id="asistente" hidden>
+    <h1>Asistente</h1>
+    <label>Itinerario
+      <select id="asistente-itinerario"></select>
+    </label>
+    <form id="form-asistente">
+      <label>Mensaje <input id="asistente-mensaje" name="mensaje" required></label>
+      <button type="submit">Enviar</button>
+    </form>
+    <div id="asistente-respuesta"></div>
+    <div id="asistente-menu"></div>
+    <div id="asistente-propuesta"></div>
+  </section>
+
+  <section id="cotizacion" hidden>
+    <h1>Cotización</h1>
+    <form id="form-cotizacion">
+      <label>Fecha <input id="cotizacion-fecha" name="fecha" type="date" required></label>
+      <label>Hospedaje <input id="cotizacion-hospedaje" name="hospedaje" required></label>
+      <label>Compañía <input id="cotizacion-compania" name="compania" required></label>
+      <button type="submit">Cotizar</button>
+    </form>
+    <p id="cotizacion-estado"></p>
+    <div id="grilla"></div>
+  </section>
+
+  <section id="error-401" hidden>
+    <h1>Error 401</h1>
+    <p>No tenés permiso para esa operación.</p>
+    <button type="button" id="volver-viajes">Volver a Mis viajes</button>
+  </section>
+
+  <script src="/web/app.js"></script>
+</body>
+</html>

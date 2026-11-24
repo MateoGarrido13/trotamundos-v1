@@ -128,7 +128,10 @@ El cliente solo consume. Cada fila es una operación del Gateway; las entradas, 
 ## Decisiones tomadas
 
 1. **Verificación:** los criterios `AC-COMP-02-*` se prueban con Playwright (Chromium), como dependencia de desarrollo.
-2. **Orden:** se implementa después de [SPEC-COMP-05](SPEC-COMP-05.md), así el cliente nace con login real. Mientras tanto la identidad es simulada.
+2. **Orden:** se implementa después de [SPEC-COMP-05](SPEC-COMP-05.md), así el cliente nace con login real.
+3. **Identidad:** COMP-05 ya está implementado. El ingreso usa `POST /auth/alta` y `POST /auth/login` y guarda `token_acceso`.
+4. **Vista principal:** además de `GET /itinerarios` y `GET /itinerarios/{id}`, Mis viajes muestra `GET /viajes` para las reservas que no están en un itinerario con membresía (las que incorpora el correo, con `itinerario_id` igual a la cuenta).
+5. **Anuncios:** la sección «Anuncios» queda vacía. El listado lo agrega [SPEC-COMP-07](SPEC-COMP-07.md); el cliente no llama un endpoint que todavía no existe.
 
 ## Historial de Cambios
 
@@ -138,3 +141,5 @@ El cliente solo consume. Cada fila es una operación del Gateway; las entradas, 
 | 2026-11-23 | Sección «Contrato e Interfaces» y confirmación de `refresco_novedades_segundos` = 60 | Decisiones de revisión: ajuste a la plantilla y valor del prototipo fijado |
 | 2026-11-23 | Paso a `aprobada` (`OK SPEC`) | Aprobación del usuario tras resolver las decisiones de revisión |
 | 2026-11-23 | Decisiones: Playwright y orden de implementación | Respuesta del usuario |
+| 2026-11-23 | Decisiones de implementación fijadas (`PLAN-COMP-02`) | Login real de COMP-05; `GET /viajes` en Mis viajes para las reservas sin membresía; anuncios de Booking vacíos hasta COMP-07 |
+| 2026-11-23 | Criterios `AC-COMP-02-01` a `AC-COMP-02-13` en verde | `pytest tests/test_comp02_web.py`: 13 passed |

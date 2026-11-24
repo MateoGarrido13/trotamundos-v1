@@ -7,9 +7,11 @@ import secrets
 from collections.abc import Mapping
 from contextlib import asynccontextmanager
 from dataclasses import replace
+from pathlib import Path
 
 from cryptography.fernet import Fernet
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 
 from trotamundos.broker import Broker, NombreCola
 from trotamundos.broker.broker import Mensaje
@@ -210,6 +212,9 @@ def create_app(configuracion: Configuracion | None = None,
     @app.get("/salud")
     def salud() -> dict[str, str]:
         return {"estado": "ok"}
+
+    # SPEC-COMP-02: HTML, CSS y JS sin compilación. /web ya es ruta pública del Gateway.
+    app.mount("/web", StaticFiles(directory=Path(__file__).resolve().parent / "web", html=True), name="cliente-web")
 
     ident = cfg.identidad
     if ident.exigir_gateway:  # D4 y D5: el Core solo cree en una identidad que firmó el Gateway

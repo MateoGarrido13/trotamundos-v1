@@ -20,6 +20,7 @@ dependencies = [
 dev = [
     "pytest>=8",
     "pytest-asyncio>=0.23",
+    "playwright>=1.49",
 ]
 
 [tool.setuptools.packages.find]
@@ -33,4 +34,5 @@ pythonpath = ["src"]
 markers = [
     "db: requiere las bases PostgreSQL de docker-compose levantadas",
     "carga: prueba de carga (un millón de eventos); se corre en la suite completa",
+    "navegador: prueba de navegador del cliente web; requiere Chromium de Playwright",
 ]
