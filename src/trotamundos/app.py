@@ -20,7 +20,8 @@ from trotamundos.analitica.base import conectar as conectar_analitica
 from trotamundos.analitica.consultas import ServicioConsultas
 from trotamundos.analitica.proyector import Proyector
 from trotamundos.asistente import app as app_asistente
-from trotamundos.composicion import ensamblar_agencias, ensamblar_asistente, ensamblar_correo
+from trotamundos.composicion import ensamblar_agencias, ensamblar_asistente, ensamblar_correo, ensamblar_cotizacion
+from trotamundos.cotizacion import api as api_cotizacion
 from trotamundos.consumidores import Supervisor
 from trotamundos.entrada import app as app_entrada
 from trotamundos.entrada import api_agencia
@@ -106,6 +107,7 @@ def create_app(configuracion: Configuracion | None = None,
     adaptador_agencia = ensamblar_agencias(broker, cfg.agencias)
     proyector = Proyector(broker, cfg.analitica.dsn)
     supervisor = Supervisor()
+    cotizacion = ensamblar_cotizacion(cfg.cotizacion)  # SPEC-COMP-06: sin Broker ni base
     # Un consumidor por cola. La de notificaciones no tiene consumidor: no hay spec que la use (QA-INT-02).
     supervisor.registrar("novedades", nodos_correo.ingesta.procesar_uno)
     supervisor.registrar("correo", consumidor_correo.procesar_uno)
@@ -118,7 +120,8 @@ def create_app(configuracion: Configuracion | None = None,
         tareas = [asyncio.create_task(tarea_periodica(repositorio, emisor=emisor)),
                   asyncio.create_task(tarea_purga(servicio_revision, cfg.revision.intervalo_purga_segundos)),
                   asyncio.create_task(tarea_purga_claves(gestion, cfg.revision.intervalo_purga_segundos)),
-                  asyncio.create_task(sondeo.ejecutar())]
+                  asyncio.create_task(sondeo.ejecutar()),
+                  asyncio.create_task(cotizacion.balanceador.ejecutar())]
         supervisor.iniciar()
         try:
             yield
@@ -128,6 +131,7 @@ def create_app(configuracion: Configuracion | None = None,
                 tarea.cancel()
             await asyncio.gather(*tareas, return_exceptions=True)
             await parseo.cerrar()
+            await cotizacion.borde.cerrar()
 
     app = FastAPI(title="Trotamundos (prototipo)", lifespan=ciclo_de_vida)
     app.state.configuracion = cfg
@@ -147,6 +151,7 @@ def create_app(configuracion: Configuracion | None = None,
     app.state.api_correo = api_correo
     app.state.gestor_correo = gestor_correo
     app.state.proyector = proyector
+    app.state.cotizacion = cotizacion
     app.include_router(api_viajes.router)
     app.include_router(api_revision.router)
     app.include_router(api_gestion.router)
@@ -154,6 +159,7 @@ def create_app(configuracion: Configuracion | None = None,
     app.include_router(api_miembros.router)
     app.include_router(api_agencia.crear_router(adaptador_agencia))
     app.include_router(app_entrada.crear_router(gestor_correo))
+    app.include_router(api_cotizacion.crear_router(cotizacion.borde))
     app.include_router(app_analitica.crear_router(ServicioConsultas(cfg.analitica)))
     app.include_router(app_asistente.crear_router(ensamblar_asistente(app, configuracion=cfg.asistente)))
 

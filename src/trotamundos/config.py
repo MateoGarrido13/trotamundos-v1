@@ -138,6 +138,29 @@ class ConfiguracionAsistente:
 
 
 @dataclass(frozen=True)
+class ConfiguracionCotizacion:
+    """SPEC-COMP-06, «Parámetros Configurables». Sin credenciales: la cotización no usa bases ni Broker.
+    `intervalo_eco_ms` y `max_copias` son del plan (PLAN-COMP-06, D10 y D14)."""
+
+    cota_cotizacion_ms: float = float(_env("TROTA_COTA_COTIZACION_MS", "800"))
+    cota_aerolineas_ms: float = float(_env("TROTA_COTA_AEROLINEAS_MS", "600"))
+    cota_hoteles_ms: float = float(_env("TROTA_COTA_HOTELES_MS", "500"))
+    cota_arrendadoras_ms: float = float(_env("TROTA_COTA_ARRENDADORAS_MS", "500"))
+    vigencia_copia_segundos: float = float(_env("TROTA_VIGENCIA_COPIA", "300"))
+    nodos_cotizacion: int = int(_env("TROTA_NODOS_COTIZACION", "2"))
+    intervalo_eco_ms: float = float(_env("TROTA_INTERVALO_ECO_MS", "1000"))
+    max_copias: int = int(_env("TROTA_MAX_COPIAS", "1000"))
+
+    @property
+    def cota_cotizacion(self) -> float:
+        return self.cota_cotizacion_ms / 1000
+
+    @property
+    def intervalo_eco(self) -> float:
+        return self.intervalo_eco_ms / 1000
+
+
+@dataclass(frozen=True)
 class Configuracion:
     correo: ConfiguracionCorreo = field(default_factory=ConfiguracionCorreo)
     broker: ConfiguracionBroker = field(default_factory=ConfiguracionBroker)
@@ -148,6 +171,7 @@ class Configuracion:
     agencias: ConfiguracionAgencias = field(default_factory=ConfiguracionAgencias)
     analitica: ConfiguracionAnalitica = field(default_factory=ConfiguracionAnalitica)
     asistente: ConfiguracionAsistente = field(default_factory=ConfiguracionAsistente)
+    cotizacion: ConfiguracionCotizacion = field(default_factory=ConfiguracionCotizacion)
 
     def __post_init__(self) -> None:
         # Ninguna retención puede ser menor que la ventana de sondeo (SPEC-REF-02/03): si lo

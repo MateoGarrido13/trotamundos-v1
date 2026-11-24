@@ -16,8 +16,16 @@ from collections.abc import Mapping
 from trotamundos.asistente.asistente import ModuloAsistente
 from trotamundos.asistente.motor import IMotorConversacional, MotorSimulado
 from trotamundos.broker import Broker
-from trotamundos.config import ConfiguracionAgencias, ConfiguracionAsistente, ConfiguracionIngesta
+from trotamundos.config import (
+    ConfiguracionAgencias, ConfiguracionAsistente, ConfiguracionCotizacion, ConfiguracionIngesta)
+from trotamundos.cotizacion.adaptadores import AdaptadorAerolineas, AdaptadorArrendadoras, AdaptadorHoteles
+from trotamundos.cotizacion.apis_simuladas import ApiAerolineasSoap, ApiArrendadoras, ApiHoteles
+from trotamundos.cotizacion.balanceador import Balanceador
+from trotamundos.cotizacion.borde import CacheBorde
+from trotamundos.cotizacion.nodo import NodoCotizacion
+from trotamundos.cotizacion.servicio import ServicioCotizacion
 from trotamundos.dominio.agencias import IAgencia
+from trotamundos.dominio.puertos_cotizacion import ICotizador
 from trotamundos.dominio.puertos_casos import EntregaNovedadCaso
 from trotamundos.entrada.agencia import AdaptadorAgencia, MockAgencia
 from trotamundos.entrada.filtro_remitentes import FiltroWhitelist
@@ -70,3 +78,32 @@ def ensamblar_asistente(
     fachada = FachadaAsistente(st.gestion, st.casos, st.novedades, st.registro_tipos)
     cfg = configuracion or st.configuracion.asistente
     return ModuloAsistente(motor or MotorSimulado(), fachada, cfg)
+
+
+@dataclass(frozen=True)
+class SistemaCotizacion:
+    """Las piezas de la cotización (SPEC-COMP-06), con las APIs simuladas a la vista para inyectarles fallos."""
+
+    borde: CacheBorde
+    balanceador: Balanceador
+    nodos: tuple[NodoCotizacion, ...]
+    apis: dict[str, object]
+
+
+def ensamblar_cotizacion(
+    configuracion: ConfiguracionCotizacion,
+    cotizadores_extra: tuple[ICotizador, ...] = (),
+) -> SistemaCotizacion:
+    """Caché de borde -> Balanceador -> nodos -> Orquestador (Scatter-Gather) -> adaptadores -> APIs.
+    Es el único lugar que conecta las piezas. Un proveedor nuevo se pasa en `cotizadores_extra`."""
+    apis = {"aerolineas": ApiAerolineasSoap(), "hoteles": ApiHoteles(), "arrendadoras": ApiArrendadoras()}
+    cotizadores: list[ICotizador] = [
+        AdaptadorAerolineas(apis["aerolineas"], configuracion.cota_aerolineas_ms / 1000),
+        AdaptadorHoteles(apis["hoteles"], configuracion.cota_hoteles_ms / 1000),
+        AdaptadorArrendadoras(apis["arrendadoras"], configuracion.cota_arrendadoras_ms / 1000),
+        *cotizadores_extra,
+    ]
+    servicio = ServicioCotizacion(cotizadores)
+    nodos = tuple(NodoCotizacion(f"cotizacion-{i + 1}", servicio) for i in range(configuracion.nodos_cotizacion))
+    balanceador = Balanceador(nodos, configuracion.intervalo_eco)
+    return SistemaCotizacion(CacheBorde(balanceador, configuracion), balanceador, nodos, apis)

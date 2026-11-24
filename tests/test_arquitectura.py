@@ -55,6 +55,26 @@ PROHIBIDOS = [
     ("orquestador/fachada_asistente", "trotamundos.asistente", "el Orquestador no conoce al Asistente"),
     ("dominio/puertos_asistente", "trotamundos.config", "los puertos solo dependen del dominio"),
     ("dominio/puertos_asistente", "trotamundos.orquestador", "los puertos solo dependen del dominio"),
+    # PLAN-COMP-06
+    ("dominio/cotizacion", "trotamundos.config", "el dominio no depende de nadie"),
+    ("dominio/puertos_cotizacion", "trotamundos.config", "los puertos solo dependen del dominio"),
+    ("dominio/puertos_cotizacion", "trotamundos.orquestador", "los puertos solo dependen del dominio"),
+    ("orquestador", "trotamundos.cotizacion", "el Orquestador del viaje no conoce la cotización"),
+    ("cotizacion/servicio", "trotamundos.cotizacion.adaptadores", "AC-COMP-06-09: el Orquestador recibe los cotizadores por contrato"),
+    ("cotizacion/servicio", "trotamundos.cotizacion.apis_simuladas", "el Orquestador no conoce las APIs de los proveedores"),
+    ("cotizacion/borde", "trotamundos.cotizacion.balanceador", "la Caché recibe un IDespachador"),
+    ("cotizacion/balanceador", "trotamundos.cotizacion.borde", "el Balanceador no conoce la Caché"),
+    ("cotizacion/balanceador", "trotamundos.cotizacion.nodo", "el Balanceador recibe INodo"),
+    ("cotizacion/adaptadores", "trotamundos.cotizacion.servicio", "el adaptador no conoce al Orquestador"),
+    ("cotizacion/apis_simuladas", "trotamundos.dominio", "la API del proveedor no conoce nuestro modelo"),
+    ("cotizacion", "trotamundos.broker", "AC-COMP-06-12: la cotización es independiente de esto"),
+    ("cotizacion", "trotamundos.persistencia", "AC-COMP-06-12: la cotización es independiente de esto"),
+    ("cotizacion", "trotamundos.entrada", "AC-COMP-06-12: la cotización es independiente de esto"),
+    ("cotizacion", "trotamundos.analitica", "AC-COMP-06-12: la cotización es independiente de esto"),
+    ("cotizacion", "trotamundos.asistente", "AC-COMP-06-12: la cotización es independiente de esto"),
+    ("cotizacion", "trotamundos.orquestador", "AC-COMP-06-12: la cotización es independiente de esto"),
+    ("cotizacion", "trotamundos.composicion", "AC-COMP-06-12: la cotización es independiente de esto"),
+    ("cotizacion", "psycopg", "AC-COMP-06-12: la cotización no escribe en una base"),
 ]
 
 
