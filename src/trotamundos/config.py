@@ -231,6 +231,19 @@ class ConfiguracionGmail:
 
 
 @dataclass(frozen=True)
+class ConfiguracionNotificaciones:
+    """SPEC-COMP-08, «Parámetros Configurables». `canales` en `None` son todos los que descubre el
+    paquete de canales (un archivo por canal): sumar uno no cambia la configuración (`AC-COMP-08-02`)."""
+
+    canales: tuple[str, ...] | None = (
+        tuple(c.strip() for c in _env("TROTA_CANALES", "").split(",") if c.strip()) or None)
+    tamano_cola_notificaciones: int = int(_env("TROTA_COLA_NOTIFICACIONES_MAX", "100"))
+    # Reintentos del publicador del Orquestador con la cola llena: 1 s, 2 s y 4 s.
+    reintentos_publicacion: int = int(_env("TROTA_REINTENTOS_NOTIFICACIONES", "3"))
+    backoff_publicacion_segundos: float = float(_env("TROTA_BACKOFF_NOTIFICACIONES", "1.0"))
+
+
+@dataclass(frozen=True)
 class Configuracion:
     correo: ConfiguracionCorreo = field(default_factory=ConfiguracionCorreo)
     broker: ConfiguracionBroker = field(default_factory=ConfiguracionBroker)
@@ -241,6 +254,7 @@ class Configuracion:
     agencias: ConfiguracionAgencias = field(default_factory=ConfiguracionAgencias)
     analitica: ConfiguracionAnalitica = field(default_factory=ConfiguracionAnalitica)
     asistente: ConfiguracionAsistente = field(default_factory=ConfiguracionAsistente)
+    notificaciones: ConfiguracionNotificaciones = field(default_factory=ConfiguracionNotificaciones)
     cotizacion: ConfiguracionCotizacion = field(default_factory=ConfiguracionCotizacion)
     gmail: ConfiguracionGmail = field(default_factory=ConfiguracionGmail)
     identidad: ConfiguracionIdentidad = field(default_factory=ConfiguracionIdentidad)
