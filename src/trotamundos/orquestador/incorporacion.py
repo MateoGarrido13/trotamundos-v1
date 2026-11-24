@@ -13,7 +13,7 @@ import asyncio
 from datetime import UTC, datetime
 
 from trotamundos.dominio.registro_tipos import RegistroTipos
-from trotamundos.dominio.reserva import Origen, Reserva
+from trotamundos.dominio.reserva import Origen, Reserva, texto_destino
 from trotamundos.dominio.reserva_normalizada import ReservaNormalizada
 from trotamundos.orquestador.eventos_analiticos import EmisorEventos
 from trotamundos.persistencia.repositorio_viajes import RepositorioViajes
@@ -29,7 +29,7 @@ class IncorporadorReservas:
     async def incorporar(self, reserva: ReservaNormalizada) -> None:
         creada = await asyncio.to_thread(self._incorporar, reserva)
         if creada is not None and self._emisor:  # una entrega repetida no publica otro evento
-            self._emisor.emitir({"tipo": "alta", "tipo_reserva": reserva.tipo, "destino": creada.lugar,
+            self._emisor.emitir({"tipo": "alta", "tipo_reserva": reserva.tipo, "destino": texto_destino(creada.lugar),
                                  "inicio": creada.inicio, "fin": creada.fin,
                                  "origen": creada.origen.value, "estado": creada.estado.value},
                                 datetime.now(UTC))

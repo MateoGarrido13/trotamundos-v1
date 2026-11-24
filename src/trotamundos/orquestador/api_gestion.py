@@ -19,6 +19,7 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Body, Header, HTTPException, Request
 from fastapi.responses import JSONResponse
 
+from trotamundos.dominio.reserva import lugar_publico
 from trotamundos.orquestador.gestion_reservas import (
     AccesoDenegado,
     GestionReservas,
@@ -62,7 +63,8 @@ def _serializar(request: Request, viaje) -> dict:
     nombres = {clase: nombre for nombre, clase in request.app.state.registro_tipos.tipos().items()}
     return {"id": viaje.id, "estado": viaje.estado, "reservas": [{
         "identificador": r.identificador, "tipo": nombres.get(type(r)), "inicio": r.inicio.isoformat(),
-        "fin": r.fin.isoformat(), "estado": r.estado.value, "lugar": r.lugar, "origen": r.origen.value,
+        "fin": r.fin.isoformat(), "estado": r.estado.value, "lugar": lugar_publico(r.lugar),
+        "origen": r.origen.value,
         "creado_por": r.creado_por, "resumen": r.resumen()} for r in viaje.reservas]}
 
 

@@ -110,3 +110,5 @@ Versión móvil del panel (`CON-01`). Al abrirse muestra el login en menos de 1,
 | 2026-11-23 | Decisión cerrada: enmienda de `REF-04` y `REF-01` | `lugar` estructurado (nombre, destino, coordenadas opcionales); la migración del código se planifica en `PLAN-COMP-03` |
 | 2026-11-23 | Paso a `aprobada` (`OK SPEC`) | Aprobación del usuario tras resolver las decisiones de revisión |
 | 2026-11-23 | Decisiones: `lugar` con coordenadas y Playwright | Respuesta del usuario |
+| 2026-11-23 | Decisiones de implementación fijadas (`PLAN-COMP-03`) | `Lugar` acepta el texto histórico; con destino o coordenadas se guarda JSON en la misma columna. Cliente en `/movil` |
+| 2026-11-23 | Criterios `AC-COMP-03-01` a `AC-COMP-03-11` en verde | `pytest tests/test_comp03_movil.py`: 11 passed |

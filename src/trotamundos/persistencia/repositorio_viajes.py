@@ -13,7 +13,7 @@ from datetime import datetime
 from psycopg.types.json import Jsonb
 
 from trotamundos.dominio.registro_tipos import RegistroTipos
-from trotamundos.dominio.reserva import Reserva
+from trotamundos.dominio.reserva import Reserva, lugar_a_texto
 from trotamundos.persistencia.base_viajes import BaseViajes
 
 CAMPOS_COMUNES = {"identificador", "viaje_id", "inicio", "fin", "estado", "lugar", "origen",
@@ -45,7 +45,7 @@ class RepositorioViajes:
             "INSERT INTO reserva (identificador, viaje_id, tipo, inicio, fin, estado, lugar, datos,"
             " origen, creado_por) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
             (reserva.identificador, reserva.viaje_id, tipo, reserva.inicio, reserva.fin,
-             reserva.estado.value, reserva.lugar, Jsonb(datos), reserva.origen.value,
+             reserva.estado.value, lugar_a_texto(reserva.lugar), Jsonb(datos), reserva.origen.value,
              reserva.creado_por)))
 
     def incorporar_reserva(self, viajero_id: str, reserva: Reserva) -> bool:
@@ -65,7 +65,7 @@ class RepositorioViajes:
                 " origen, creado_por) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
                 " ON CONFLICT DO NOTHING",
                 (reserva.identificador, reserva.viaje_id, tipo, reserva.inicio, reserva.fin,
-                 reserva.estado.value, reserva.lugar, datos, reserva.origen.value,
+                 reserva.estado.value, lugar_a_texto(reserva.lugar), datos, reserva.origen.value,
                  reserva.creado_por)).rowcount > 0
         return self._base.escribir(op)
 

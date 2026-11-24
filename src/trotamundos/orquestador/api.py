@@ -10,6 +10,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Header, HTTPException, Request
 
+from trotamundos.dominio.reserva import lugar_publico
 from trotamundos.orquestador.agrupacion import Agrupacion, ViajeAgrupado
 from trotamundos.persistencia.base_viajes import ErrorBaseNoDisponible
 
@@ -28,7 +29,7 @@ def _serializar(request: Request, viaje: ViajeAgrupado) -> dict:
                 "inicio": r.inicio.isoformat(),
                 "fin": r.fin.isoformat(),
                 "estado": r.estado.value,
-                "lugar": r.lugar,
+                "lugar": lugar_publico(r.lugar),
                 "resumen": r.resumen(),
             }
             for r in viaje.reservas

@@ -51,6 +51,7 @@ Las decisiones se tomaron así:
 - **`RONDA_2/LISTADO_DRIVERS_RONDA_2.md`**: los drivers de la Ronda 2.
 - **`POLITICAS_SPECS_Y_PLANES.md`, `specs/` y `planes/`**: políticas de Spec-Driven Development, plantillas (`SPEC_TEMPLATE.md`, `PLAN_TEMPLATE.md`) y [Plan Maestro del prototipo](planes/PLAN_MAESTRO.md).
 - **`src/trotamundos/web/`**: cliente web (HTML, CSS y JavaScript, sin compilación), servido por la app en `/web`. Contrato en [SPEC-COMP-02](specs/SPEC-COMP-02.md) y plan en [PLAN-COMP-02](planes/PLAN-COMP-02.md).
+- **`src/trotamundos/movil/`**: cliente móvil (PWA) servido en `/movil`, con GPS en el dispositivo. Contrato en [SPEC-COMP-03](specs/SPEC-COMP-03.md) y plan en [PLAN-COMP-03](planes/PLAN-COMP-03.md).
 - **Plantillas ADD** (`ADR_TEMPLATE.md`, `ESCENARIO_QA_TEMPLATE.md`, `ITERACION_ADD_TEMPLATE.md`): los formatos que usan los documentos de arquitectura.
 - **`TPE - Diseño de Sistemas de Software.pdf`**: el enunciado.
 

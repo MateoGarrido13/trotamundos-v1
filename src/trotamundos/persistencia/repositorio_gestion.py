@@ -14,7 +14,7 @@ from typing import Any
 import psycopg
 from psycopg.types.json import Jsonb
 
-from trotamundos.dominio.reserva import Reserva
+from trotamundos.dominio.reserva import Reserva, lugar_a_texto
 from trotamundos.persistencia.repositorio_viajes import CAMPOS_COMUNES
 
 
@@ -110,7 +110,7 @@ class RepositorioGestion:
             "INSERT INTO reserva (identificador, viaje_id, tipo, inicio, fin, estado, lugar, datos,"
             " origen, creado_por) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
             (reserva.identificador, reserva.viaje_id, tipo, reserva.inicio, reserva.fin,
-             reserva.estado.value, reserva.lugar,
+             reserva.estado.value, lugar_a_texto(reserva.lugar),
              Jsonb(reserva.model_dump(mode="json", exclude=CAMPOS_COMUNES)),
              reserva.origen.value, reserva.creado_por))
 
@@ -119,7 +119,7 @@ class RepositorioGestion:
         c.execute(
             "UPDATE reserva SET inicio = %s, fin = %s, estado = %s, lugar = %s, datos = %s,"
             " editada_manualmente = editada_manualmente OR %s WHERE identificador = %s",
-            (reserva.inicio, reserva.fin, reserva.estado.value, reserva.lugar,
+            (reserva.inicio, reserva.fin, reserva.estado.value, lugar_a_texto(reserva.lugar),
              Jsonb(reserva.model_dump(mode="json", exclude=CAMPOS_COMUNES)), marcar_editada,
              reserva.identificador))
 

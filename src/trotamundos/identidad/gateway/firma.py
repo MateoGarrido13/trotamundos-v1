@@ -16,7 +16,7 @@ CABECERA_FIRMA = "x-gateway-firma"
 CABECERA_TITULAR = "x-titular-id"
 # `/correo/oauth/callback` es adonde vuelve el navegador desde Google: no trae token. Lo protege el
 # `state` de un solo uso que emitió `POST /correo/oauth/iniciar` (SPEC-COMP-04).
-RUTAS_PUBLICAS = ("/salud", "/auth/", "/web", "/correo/oauth/callback")
+RUTAS_PUBLICAS = ("/salud", "/auth/", "/web", "/movil", "/correo/oauth/callback")
 
 
 def es_publica(ruta: str) -> bool:

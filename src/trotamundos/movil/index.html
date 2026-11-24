@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Trotamundos</title>
+  <link rel="manifest" href="/movil/manifest.webmanifest">
+  <link rel="stylesheet" href="/movil/estilos.css">
+</head>
+<body>
+  <header>
+    <p class="marca">Trotamundos</p>
+    <p id="cuenta" hidden></p>
+    <nav id="menu" hidden>
+      <button type="button" data-pantalla="viajes">Mis viajes</button>
+      <button type="button" data-pantalla="novedades">Novedades</button>
+      <button type="button" data-pantalla="agencia">Agencia y problemas</button>
+      <button type="button" data-pantalla="revision">Mensajes en revisión</button>
+      <button type="button" data-pantalla="asistente">Asistente</button>
+      <button type="button" id="salir">Salir</button>
+    </nav>
+  </header>
+  <p id="aviso" hidden></p>
+  <button type="button" id="reintentar" hidden>Reintentar</button>
+
+  <section id="ingreso">
+    <h1>Ingreso</h1>
+    <form id="form-ingreso">
+      <label>Correo <input id="correo-cuenta" type="email" autocomplete="username" required></label>
+      <label>Contraseña <input id="contrasena" type="password" autocomplete="current-password" required></label>
+      <label>Región
+        <select id="region">
+          <option value="amer">amer</option>
+          <option value="emea">emea</option>
+          <option value="apac">apac</option>
+        </select>
+      </label>
+      <button type="submit" id="entrar">Entrar</button>
+      <button type="button" id="crear-cuenta">Crear cuenta</button>
+    </form>
+    <p id="ingreso-nota"></p>
+  </section>
+
+  <section id="viajes" hidden>
+    <h1>Mis viajes</h1>
+    <form id="form-viaje">
+      <label>Nombre del viaje <input id="viaje-nombre" maxlength="100" required></label>
+      <button type="submit">Crear viaje</button>
+    </form>
+    <div id="arbol-viajes"></div>
+  </section>
+
+  <section id="viaje" hidden>
+    <h1>Viaje</h1>
+    <p id="viaje-titulo"></p>
+    <form id="form-reserva">
+      <label>Tipo
+        <select id="reserva-tipo">
+          <option>actividad</option>
+          <option>hotel</option>
+          <option>vuelo</option>
+        </select>
+      </label>
+      <label>Inicio <input id="reserva-inicio" type="datetime-local" required></label>
+      <label>Fin <input id="reserva-fin" type="datetime-local" required></label>
+      <label>Nombre del lugar <input id="lugar-nombre" required></label>
+      <label>Destino <input id="lugar-destino"></label>
+      <label>Latitud <input id="lugar-latitud" inputmode="decimal"></label>
+      <label>Longitud <input id="lugar-longitud" inputmode="decimal"></label>
+      <button type="submit">Dar de alta</button>
+    </form>
+    <div id="lista-reservas"></div>
+  </section>
+
+  <section id="novedades" hidden>
+    <h1>Novedades</h1>
+    <div id="lista-novedades"></div>
+    <div id="lista-casos"></div>
+  </section>
+
+  <section id="agencia" hidden>
+    <h1>Agencia y problemas</h1>
+    <p>A la agencia viajan el identificador de la reserva y la descripción.</p>
+    <p>Reserva: <span id="problema-reserva"></span></p>
+    <p id="falta-agencia" hidden>Elegí una agencia y aceptá el consentimiento antes de reportar.</p>
+    <form id="form-agencia">
+      <label>Agencia <input id="agencia-nombre" required></label>
+      <label><input id="consentimiento" type="checkbox"> Doy mi consentimiento para enviar esos datos a la agencia</label>
+      <button type="submit">Guardar agencia</button>
+    </form>
+    <form id="form-problema">
+      <label>Descripción <textarea id="problema-descripcion" required></textarea></label>
+      <button type="submit">Reportar problema</button>
+    </form>
+  </section>
+
+  <section id="revision" hidden>
+    <h1>Mensajes en revisión</h1>
+    <div id="lista-revision"></div>
+  </section>
+
+  <section id="asistente" hidden>
+    <h1>Asistente</h1>
+    <form id="form-asistente">
+      <label>Mensaje <input id="asistente-mensaje" required></label>
+      <button type="submit">Enviar</button>
+    </form>
+    <div id="asistente-respuesta"></div>
+    <div id="asistente-menu"></div>
+  </section>
+
+  <section id="error-401" hidden>
+    <h1>Error 401</h1>
+    <p>No tenés permiso para esa operación.</p>
+    <button type="button" id="volver-viajes">Volver a Mis viajes</button>
+  </section>
+  <script src="/movil/app.js"></script>
+</body>
+</html>

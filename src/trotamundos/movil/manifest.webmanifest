@@ -1,0 +1,12 @@
+{
+  "name": "Trotamundos",
+  "short_name": "Trotamundos",
+  "start_url": "/movil/",
+  "scope": "/movil/",
+  "display": "standalone",
+  "background_color": "#f4f7f5",
+  "theme_color": "#14532d",
+  "icons": [
+    {"src": "/movil/icono.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any"}
+  ]
+}

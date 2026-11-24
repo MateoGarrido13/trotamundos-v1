@@ -29,7 +29,7 @@ from pydantic import ValidationError
 
 from trotamundos.config import ConfiguracionGestion
 from trotamundos.dominio.registro_tipos import ErrorRegistroTipos, RegistroTipos
-from trotamundos.dominio.reserva import Origen, Reserva
+from trotamundos.dominio.reserva import Origen, Reserva, texto_destino
 from trotamundos.orquestador.agrupacion import Agrupacion, ViajeAgrupado
 from trotamundos.orquestador.eventos_analiticos import EmisorEventos
 from trotamundos.orquestador.control_acceso import (
@@ -222,7 +222,7 @@ class GestionReservas:
         return self._confirmar(
             c, "agregar", Permiso.REGISTRAR, actor, itin, clave, ahora, ident,
             {"tipo": s.tipo, **reserva.model_dump(mode="json")},
-            evento={"tipo": "alta", "tipo_reserva": s.tipo, "destino": reserva.lugar,
+            evento={"tipo": "alta", "tipo_reserva": s.tipo, "destino": texto_destino(reserva.lugar),
                     "inicio": reserva.inicio, "fin": reserva.fin, "origen": reserva.origen.value,
                     "estado": reserva.estado.value})
 
@@ -245,7 +245,7 @@ class GestionReservas:
         if operacion == "eliminar":
             RepositorioGestion.dar_de_baja(c, reserva_id, ahora)
             cuerpo: dict = {"identificador": reserva_id, "baja_en": ahora.isoformat()}
-            evento = {"tipo": "baja", "tipo_reserva": fila.tipo, "destino": fila.lugar,
+            evento = {"tipo": "baja", "tipo_reserva": fila.tipo, "destino": texto_destino(fila.lugar),
                       "inicio": fila.inicio, "fin": fila.fin, "origen": fila.origen, "estado": fila.estado}
         else:
             try:
@@ -257,7 +257,7 @@ class GestionReservas:
                                       "campos_invalidos", reserva_id)
             RepositorioGestion.actualizar_reserva(c, reserva)  # queda marcada como editada a mano
             cuerpo = {"tipo": fila.tipo, **reserva.model_dump(mode="json"), "editada_manualmente": True}
-            evento = {"tipo": "modificacion", "tipo_reserva": fila.tipo, "destino": reserva.lugar,
+            evento = {"tipo": "modificacion", "tipo_reserva": fila.tipo, "destino": texto_destino(reserva.lugar),
                       "inicio": reserva.inicio, "fin": reserva.fin, "origen": fila.origen,
                       "estado": reserva.estado.value}
         return self._confirmar(c, operacion, Permiso.MODIFICAR, actor, itin, clave, ahora, reserva_id,

@@ -34,7 +34,8 @@ class FachadaAsistente:
             return ResultadoOrquestador("denegado")
         reservas = [{
             "identificador": r.identificador, "viaje_id": r.viaje_id, "tipo": self._nombres.get(type(r), type(r).__name__),
-            "lugar": r.lugar, "inicio": r.inicio.isoformat(), "fin": r.fin.isoformat(), "estado": r.estado.value,
+            "lugar": str(r.lugar) if r.lugar else None, "inicio": r.inicio.isoformat(),
+            "fin": r.fin.isoformat(), "estado": r.estado.value,
         } for v in viajes for r in v.reservas]
         return ResultadoOrquestador("ok", datos={"reservas": reservas})
 

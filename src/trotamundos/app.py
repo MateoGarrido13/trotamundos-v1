@@ -213,8 +213,10 @@ def create_app(configuracion: Configuracion | None = None,
     def salud() -> dict[str, str]:
         return {"estado": "ok"}
 
-    # SPEC-COMP-02: HTML, CSS y JS sin compilación. /web ya es ruta pública del Gateway.
-    app.mount("/web", StaticFiles(directory=Path(__file__).resolve().parent / "web", html=True), name="cliente-web")
+    # SPEC-COMP-02 y SPEC-COMP-03: HTML, CSS y JS sin compilación. /web y /movil son rutas públicas.
+    estaticos = Path(__file__).resolve().parent
+    app.mount("/web", StaticFiles(directory=estaticos / "web", html=True), name="cliente-web")
+    app.mount("/movil", StaticFiles(directory=estaticos / "movil", html=True), name="cliente-movil")
 
     ident = cfg.identidad
     if ident.exigir_gateway:  # D4 y D5: el Core solo cree en una identidad que firmó el Gateway

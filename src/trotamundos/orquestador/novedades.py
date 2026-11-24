@@ -22,6 +22,7 @@ import psycopg
 from pydantic import ValidationError
 
 from trotamundos.dominio.registro_tipos import ErrorRegistroTipos, RegistroTipos
+from trotamundos.dominio.reserva import texto_destino
 from trotamundos.orquestador.control_acceso import Decision, ModuloControlAcceso, Permiso
 from trotamundos.orquestador.eventos_analiticos import EmisorEventos
 from trotamundos.orquestador.gestion_reservas import (
@@ -96,7 +97,7 @@ class ServicioNovedades:
             return "retenida", None
         RepositorioGestion.actualizar_reserva(c, nueva, marcar_editada=False)
         registrar("aplicada")
-        return "aplicada", {"tipo": "modificacion", "tipo_reserva": fila.tipo, "destino": nueva.lugar,
+        return "aplicada", {"tipo": "modificacion", "tipo_reserva": fila.tipo, "destino": texto_destino(nueva.lugar),
                             "inicio": nueva.inicio, "fin": nueva.fin, "origen": fila.origen,
                             "estado": nueva.estado.value}
 
