@@ -1,7 +1,7 @@
 # PLAN-COMP-05. Identidad regional y seguridad en el borde
 
 * **Spec asociada:** [SPEC-COMP-05](../specs/SPEC-COMP-05.md) (aprobada)
-* **Estado:** aprobado (`OK PLAN` dado junto con las decisiones D1 a D6)
+* **Estado:** terminado
 * **Fecha:** 2026-11-23
 * **Incremento (Slice):** Slice 1 de [PLAN_MAESTRO.md](PLAN_MAESTRO.md)
 
@@ -53,19 +53,19 @@ El `orquestador`, `entrada`, `asistente`, `analitica` y `persistencia` no import
 
 | AC | Tarea | Test | Estado |
 | :--- | :--- | :--- | :--- |
-| `AC-COMP-05-01` | 01, 03 | `test_AC_COMP_05_01_cada_cuenta_vive_en_una_region_con_su_prefijo` | [ ] |
-| `AC-COMP-05-02` | 03 | `test_AC_COMP_05_02_el_alta_trae_la_sesion` | [ ] |
-| `AC-COMP-05-03` | 03 | `test_AC_COMP_05_03_region_lenta_deja_unicidad_pendiente` | [ ] |
-| `AC-COMP-05-04` | 03 | `test_AC_COMP_05_04_correo_de_otra_region_se_rechaza` | [ ] |
-| `AC-COMP-05-05` | 05 | `test_AC_COMP_05_05_el_gateway_valida_sin_llamar_a_ninguna_region` | [ ] |
-| `AC-COMP-05-06` | 02, 05 | `test_AC_COMP_05_06_token_alterado_o_vencido_no_llega_al_core` | [ ] |
-| `AC-COMP-05-07` | 05 | `test_AC_COMP_05_07_pedido_directo_al_core_con_identidad_se_rechaza` | [ ] |
-| `AC-COMP-05-08` | 06 | `test_AC_COMP_05_08_rafaga_de_50_recuperaciones` | [ ] |
-| `AC-COMP-05-09` | 04 | `test_AC_COMP_05_09_respuesta_uniforme_exista_o_no_la_cuenta` | [ ] |
-| `AC-COMP-05-10` | 04 | `test_AC_COMP_05_10_token_de_recuperacion_de_un_solo_uso` | [ ] |
-| `AC-COMP-05-11` | 03, 04 | `test_AC_COMP_05_11_recuperar_revoca_los_tokens_de_renovacion` | [ ] |
-| `AC-COMP-05-12` | 04 | `test_AC_COMP_05_12_un_solo_aviso_por_ventana` | [ ] |
-| `AC-COMP-05-13` | 07 | `test_AC_COMP_05_13_mil_altas_con_cien_en_vuelo` | [ ] |
+| `AC-COMP-05-01` | 01, 03 | `test_AC_COMP_05_01_cada_cuenta_vive_en_una_region_con_su_prefijo` | [x] |
+| `AC-COMP-05-02` | 03 | `test_AC_COMP_05_02_el_alta_trae_la_sesion` | [x] |
+| `AC-COMP-05-03` | 03 | `test_AC_COMP_05_03_region_lenta_deja_unicidad_pendiente` | [x] |
+| `AC-COMP-05-04` | 03 | `test_AC_COMP_05_04_correo_de_otra_region_se_rechaza` | [x] |
+| `AC-COMP-05-05` | 05 | `test_AC_COMP_05_05_el_gateway_valida_sin_llamar_a_ninguna_region` | [x] |
+| `AC-COMP-05-06` | 02, 05 | `test_AC_COMP_05_06_token_alterado_o_vencido_no_llega_al_core` | [x] |
+| `AC-COMP-05-07` | 05 | `test_AC_COMP_05_07_pedido_directo_al_core_con_identidad_se_rechaza` | [x] |
+| `AC-COMP-05-08` | 06 | `test_AC_COMP_05_08_rafaga_de_50_recuperaciones` | [x] |
+| `AC-COMP-05-09` | 04 | `test_AC_COMP_05_09_respuesta_uniforme_exista_o_no_la_cuenta` | [x] |
+| `AC-COMP-05-10` | 04 | `test_AC_COMP_05_10_token_de_recuperacion_de_un_solo_uso` | [x] |
+| `AC-COMP-05-11` | 03, 04 | `test_AC_COMP_05_11_recuperar_revoca_los_tokens_de_renovacion` | [x] |
+| `AC-COMP-05-12` | 04 | `test_AC_COMP_05_12_un_solo_aviso_por_ventana` | [x] |
+| `AC-COMP-05-13` | 07 | `test_AC_COMP_05_13_mil_altas_con_cien_en_vuelo` | [x] |
 
 ## Estrategia de Pruebas y Simulación de Fallos
 
