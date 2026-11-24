@@ -137,6 +137,53 @@ class ConfiguracionAsistente:
         return self.apertura_circuito_segundos * self.escala_tiempos
 
 
+REGIONES = ("amer", "emea", "apac")
+_PUERTOS_CUENTAS = {"amer": (5436, 5437), "emea": (5438, 5439), "apac": (5440, 5441)}
+
+
+def _dsn_cuentas() -> dict[str, tuple[str, str]]:
+    """Primaria y pasiva de cada región (SPEC-COMP-05, D1): `TROTA_DSN_CUENTAS_<REGIÓN>_<ROL>`."""
+    dsn = {}
+    for region, (puerto_primaria, puerto_pasiva) in _PUERTOS_CUENTAS.items():
+        base = "postgresql://trotamundos:trotamundos@localhost:{}/trotamundos_dev"
+        dsn[region] = (
+            _env(f"TROTA_DSN_CUENTAS_{region.upper()}_PRIMARIA", base.format(puerto_primaria)),
+            _env(f"TROTA_DSN_CUENTAS_{region.upper()}_PASIVA", base.format(puerto_pasiva)))
+    return dsn
+
+
+def _claves_firma() -> dict[str, str]:
+    return {r: _env(f"TROTA_CLAVE_FIRMA_{r.upper()}", "") for r in REGIONES}
+
+
+@dataclass(frozen=True)
+class ConfiguracionIdentidad:
+    """SPEC-COMP-05, «Parámetros Configurables»."""
+
+    regiones: tuple[str, ...] = REGIONES
+    dsn: dict[str, tuple[str, str]] = field(default_factory=_dsn_cuentas)
+    # Semilla Ed25519 de cada región (hex de 32 bytes). Vacía: se genera una efímera al arrancar.
+    claves_firma: dict[str, str] = field(default_factory=_claves_firma)
+    # Secreto interno con el que el Gateway firma la identidad que pasa al Core (D4).
+    clave_gateway: str = _env("TROTA_CLAVE_GATEWAY", "")
+    vida_token_acceso_minutos: float = float(_env("TROTA_VIDA_TOKEN_ACCESO", "15"))
+    vida_token_renovacion_dias: float = float(_env("TROTA_VIDA_TOKEN_RENOVACION", "7"))
+    cota_unicidad_ms: int = int(_env("TROTA_COTA_UNICIDAD_MS", "300"))
+    cupo_login: int = int(_env("TROTA_CUPO_LOGIN", "10"))
+    cupo_recuperacion: int = int(_env("TROTA_CUPO_RECUPERACION", "3"))
+    ventana_tasa_segundos: float = float(_env("TROTA_VENTANA_TASA", "60"))
+    cupo_recuperacion_por_cuenta: int = int(_env("TROTA_CUPO_RECUPERACION_CUENTA", "3"))
+    ventana_aviso_minutos: float = float(_env("TROTA_VENTANA_AVISO", "60"))
+    vida_token_recuperacion_minutos: float = float(_env("TROTA_VIDA_TOKEN_RECUPERACION", "30"))
+    # Costo de scrypt como potencia de 2 (N = 2**costo_hash). Los tests lo bajan.
+    costo_hash: int = int(_env("TROTA_COSTO_HASH", "14"))
+    # D5: con True el Core solo acepta identidades que firmó el Gateway. La app real lo activa.
+    exigir_gateway: bool = _env("TROTA_EXIGIR_GATEWAY", "0") == "1"
+    # Hilos propios de la recuperación (D10).
+    hilos_recuperacion: int = int(_env("TROTA_HILOS_RECUPERACION", "4"))
+    hilos_unicidad: int = int(_env("TROTA_HILOS_UNICIDAD", "32"))
+
+
 @dataclass(frozen=True)
 class Configuracion:
     correo: ConfiguracionCorreo = field(default_factory=ConfiguracionCorreo)
@@ -148,6 +195,7 @@ class Configuracion:
     agencias: ConfiguracionAgencias = field(default_factory=ConfiguracionAgencias)
     analitica: ConfiguracionAnalitica = field(default_factory=ConfiguracionAnalitica)
     asistente: ConfiguracionAsistente = field(default_factory=ConfiguracionAsistente)
+    identidad: ConfiguracionIdentidad = field(default_factory=ConfiguracionIdentidad)
 
     def __post_init__(self) -> None:
         # Ninguna retención puede ser menor que la ventana de sondeo (SPEC-REF-02/03): si lo

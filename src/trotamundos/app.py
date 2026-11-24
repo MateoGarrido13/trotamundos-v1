@@ -12,7 +12,8 @@ from cryptography.fernet import Fernet
 from fastapi import FastAPI
 
 from trotamundos.broker import Broker, NombreCola
-from trotamundos.config import Configuracion
+from trotamundos.broker.broker import Mensaje
+from trotamundos.config import Configuracion, ConfiguracionIdentidad
 from trotamundos.dominio.registro_tipos import RegistroTipos
 from trotamundos.analitica import app as app_analitica
 from trotamundos.analitica.base import aplicar_esquema as aplicar_esquema_analitico
@@ -29,6 +30,13 @@ from trotamundos.entrada.api_correo import MockApiCorreo
 from trotamundos.entrada.consumidor_correo import ConsumidorCorreo
 from trotamundos.entrada.gestor_autorizacion import CifradorTokens, GestorAutorizacion, RepositorioTokensPostgres
 from trotamundos.entrada.parseo_aislado.cliente import ClienteParseo
+from trotamundos.identidad.gateway.gateway import Gateway
+from trotamundos.identidad.gateway.limitador import LimitadorTasa
+from trotamundos.identidad.gateway.nucleo import ExigirGateway
+from trotamundos.identidad.region import api as api_identidad
+from trotamundos.identidad.region.base import aplicar_esquema as aplicar_esquema_cuentas
+from trotamundos.identidad.region.regiones import ensamblar_regiones
+from trotamundos.identidad.tokens import ValidadorTokens, clave_publica_hex
 from trotamundos.entrada.programador_sondeo import ProgramadorSondeo
 from trotamundos.orquestador import api as api_viajes
 from trotamundos.orquestador import api_casos, api_gestion, api_miembros, api_revision
@@ -59,6 +67,13 @@ def _con_claves_de_desarrollo(cfg: Configuracion) -> Configuracion:
     if not cfg.asistente.clave_contexto:
         log.warning("TROTA_CLAVE_ASISTENTE vacía: se usa una clave efímera")
         cfg = replace(cfg, asistente=replace(cfg.asistente, clave_contexto=secrets.token_hex(32)))
+    ident = cfg.identidad
+    faltan = [r for r in ident.regiones if not ident.claves_firma.get(r)]
+    if faltan or not ident.clave_gateway:
+        log.warning("claves de identidad vacías (%s): se usan claves efímeras", ", ".join(faltan) or "gateway")
+        claves = {**ident.claves_firma, **{r: secrets.token_hex(32) for r in faltan}}
+        cfg = replace(cfg, identidad=replace(
+            ident, claves_firma=claves, clave_gateway=ident.clave_gateway or secrets.token_hex(32)))
     return cfg
 
 
@@ -71,6 +86,13 @@ def _aplicar_esquemas(cfg: Configuracion) -> None:
                 aplicar_esquemas(conn)
         except Exception:  # noqa: BLE001
             log.exception("no se pudieron aplicar los esquemas en una base de viajes")
+    for region, dsns in cfg.identidad.dsn.items():
+        for dsn in dsns:
+            try:
+                with conectar(dsn, autocommit=True) as conn:
+                    aplicar_esquema_cuentas(conn)
+            except Exception:  # noqa: BLE001
+                log.exception("no se pudo aplicar el esquema de la Base de cuentas de %s", region)
     try:
         with conectar_analitica(cfg.analitica.dsn, autocommit=True) as conn:
             aplicar_esquema_analitico(conn)
@@ -79,7 +101,9 @@ def _aplicar_esquemas(cfg: Configuracion) -> None:
 
 
 def create_app(configuracion: Configuracion | None = None,
-               tipos_extra: Mapping[str, type] | None = None) -> FastAPI:
+               tipos_extra: Mapping[str, type] | None = None, *,
+               con_gateway: bool | None = None) -> FastAPI:
+    """`con_gateway=None` sigue a `identidad.exigir_gateway`; los tests de frontera lo fijan aparte."""
     cfg = _con_claves_de_desarrollo(configuracion or Configuracion())
     registro = RegistroTipos()
     # Un tipo duplicado o una clase que no extiende Reserva rechaza el arranque (AC-REF-01-08).
@@ -106,6 +130,12 @@ def create_app(configuracion: Configuracion | None = None,
     adaptador_agencia = ensamblar_agencias(broker, cfg.agencias)
     proyector = Proyector(broker, cfg.analitica.dsn)
     supervisor = Supervisor()
+
+    def publicar_notificacion(cuerpo: dict) -> None:
+        # SPEC-COMP-05, D6: el correo de recuperación y el aviso van a la cola de notificaciones.
+        broker.publicar(NombreCola.NOTIFICACIONES, Mensaje(id=cuerpo["id"], cuerpo=cuerpo))
+
+    servicios_identidad, red_regiones = ensamblar_regiones(cfg.identidad, publicar_notificacion)
     # Un consumidor por cola. La de notificaciones no tiene consumidor: no hay spec que la use (QA-INT-02).
     supervisor.registrar("novedades", nodos_correo.ingesta.procesar_uno)
     supervisor.registrar("correo", consumidor_correo.procesar_uno)
@@ -124,6 +154,7 @@ def create_app(configuracion: Configuracion | None = None,
             yield
         finally:
             await supervisor.detener()
+            red_regiones.cerrar()
             for tarea in tareas:
                 tarea.cancel()
             await asyncio.gather(*tareas, return_exceptions=True)
@@ -144,9 +175,12 @@ def create_app(configuracion: Configuracion | None = None,
     app.state.nodos_correo = nodos_correo
     app.state.servicio_viajes = ServicioViajes(base_viajes)
     app.state.supervisor = supervisor
+    app.state.servicios_identidad = servicios_identidad
+    app.state.red_regiones = red_regiones
     app.state.api_correo = api_correo
     app.state.gestor_correo = gestor_correo
     app.state.proyector = proyector
+    app.include_router(api_identidad.crear_router(servicios_identidad, cfg.identidad.hilos_recuperacion))
     app.include_router(api_viajes.router)
     app.include_router(api_revision.router)
     app.include_router(api_gestion.router)
@@ -161,7 +195,17 @@ def create_app(configuracion: Configuracion | None = None,
     def salud() -> dict[str, str]:
         return {"estado": "ok"}
 
+    ident = cfg.identidad
+    if ident.exigir_gateway:  # D4 y D5: el Core solo cree en una identidad que firmó el Gateway
+        app.add_middleware(ExigirGateway, secreto=ident.clave_gateway)
+    if ident.exigir_gateway if con_gateway is None else con_gateway:
+        app.state.limitador = LimitadorTasa(
+            {"/auth/login": ident.cupo_login, "/auth/recuperacion": ident.cupo_recuperacion},
+            ident.ventana_tasa_segundos)
+        app.add_middleware(
+            Gateway, validador=ValidadorTokens({r: clave_publica_hex(k) for r, k in ident.claves_firma.items()}),
+            limitador=app.state.limitador, secreto=ident.clave_gateway)
     return app
 
 
-app = create_app()
+app = create_app(Configuracion(identidad=ConfiguracionIdentidad(exigir_gateway=True)))
