@@ -125,6 +125,11 @@ El cliente solo consume. Cada fila es una operación del Gateway; las entradas, 
 * Cliente móvil, GPS e instalación: [SPEC-COMP-03](SPEC-COMP-03.md).
 * Diseño visual fino, internacionalización, modo oscuro.
 
+## Decisiones tomadas
+
+1. **Verificación:** los criterios `AC-COMP-02-*` se prueban con Playwright (Chromium), como dependencia de desarrollo.
+2. **Orden:** se implementa después de [SPEC-COMP-05](SPEC-COMP-05.md), así el cliente nace con login real. Mientras tanto la identidad es simulada.
+
 ## Historial de Cambios
 
 | Fecha | Cambio | Motivo |
@@ -132,3 +137,4 @@ El cliente solo consume. Cada fila es una operación del Gateway; las entradas, 
 | 2026-11-23 | Versión inicial (`borrador`) | Pedido del usuario; falta de cliente detectada en la prueba de humo |
 | 2026-11-23 | Sección «Contrato e Interfaces» y confirmación de `refresco_novedades_segundos` = 60 | Decisiones de revisión: ajuste a la plantilla y valor del prototipo fijado |
 | 2026-11-23 | Paso a `aprobada` (`OK SPEC`) | Aprobación del usuario tras resolver las decisiones de revisión |
+| 2026-11-23 | Decisiones: Playwright y orden de implementación | Respuesta del usuario |
